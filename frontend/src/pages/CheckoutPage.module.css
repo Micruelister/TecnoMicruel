@@ -1,0 +1,186 @@
+  /* ================================================================= */
+  /* FILE: CheckoutPage.module.css (FINAL VERSION)                     */
+  /* ================================================================= */
+
+  .checkoutLayout {
+    display: grid;
+    grid-template-columns: 1fr; /* Start with a single column for mobile */
+    gap: 2rem;
+    align-items: flex-start;
+    margin-top: 2rem;
+  }
+
+  /* For larger screens, switch to two columns */
+  @media (min-width: 992px) {
+    .checkoutLayout {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+
+  .orderDetails, .orderSummary {
+    background-color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 8px;
+    color: #333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .orderDetails h3, .orderSummary h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1rem;
+    font-size: 1.25rem;
+  }
+
+  /* --- FORM STYLES --- */
+  .addressForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .formGroup {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .formRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .formGroup label {
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #555;
+  }
+
+  .formGroup input, .formGroup select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  .formGroup input:focus, .formGroup select:focus {
+    outline: none;
+    border-color: #67e9c8;
+    box-shadow: 0 0 0 2px rgba(103, 233, 200, 0.2);
+  }
+
+  /* Specific style for the Autocomplete input to ensure consistency */
+  .autocompleteInput {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+
+  .autocompleteInput:focus {
+    outline: none;
+    border-color: #67e9c8;
+    box-shadow: 0 0 0 2px rgba(103, 233, 200, 0.2);
+  }
+
+
+  /* --- ORDER ITEMS --- */
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .item:last-child {
+    border-bottom: none;
+  }
+
+  .item span:first-child {
+    color: #555;
+  }
+
+  .item span:last-child {
+    font-weight: bold;
+  }
+
+  /* --- ORDER SUMMARY --- */
+  .orderSummary {
+    position: sticky;
+    top: 2rem;
+  }
+
+  .summaryLine {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+  }
+
+  .summaryLine span:first-child {
+    color: #555;
+  }
+
+  .summaryLine span:last-child {
+    font-weight: bold;
+  }
+
+  .payButton {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: white;
+    background-color: #27ae60;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .payButton:hover {
+    background-color: #2ecc71;
+  }
+
+  .payButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  .phoneInputContainer {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .phoneInputContainer:focus-within {
+    border-color: #67e9c8;
+    box-shadow: 0 0 0 2px rgba(103, 233, 200, 0.2);
+  }
+
+  .dialCode {
+    padding: 0.75rem;
+    background-color: #f0f0f0;
+    border-right: 1px solid #ccc;
+    color: #555;
+  }
+
+  /* Hacemos que el input del teléfono no tenga borde propio */
+  .phoneInputContainer input {
+    border: none;
+    flex-grow: 1;
+  }
+
+  .phoneInputContainer input:focus {
+    outline: none;
+    box-shadow: none; /* Quitamos el brillo individual */
+  }

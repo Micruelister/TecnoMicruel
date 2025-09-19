@@ -1,0 +1,51 @@
+/* ================================================================= */
+/* FILE: index.css (GLOBAL STYLES)                                   */
+/* ================================================================= */
+
+/* Using a modern CSS reset for consistency across browsers */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* --- THE FIX IS HERE --- */
+  /* Set a dark background color for the entire application */
+  background-color: #2c3e50; /* A nice, soft dark blue/gray */
+  
+  /* Set a default text color that contrasts with the dark background */
+  color: #ffffff; /* A light, soft white */
+}
+
+/* A general style for links to make them look nice */
+a {
+  color: #67e9c8; /* Your theme's accent color */
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* We can keep this .container class here for global use */
+.container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+#root, .app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Ocupa al menos el 100% de la altura de la pantalla */
+}
+
+.main-content {
+  flex-grow: 1; /* Hace que el contenido principal crezca para ocupar el espacio disponible */
+}

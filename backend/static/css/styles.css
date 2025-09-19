@@ -1,0 +1,74 @@
+/* ================================================================= */
+/* FILE: estilos.css (FULL AND TRANSLATED VERSION)                   */
+/* We will rename this file to styles.css                            */
+/* ================================================================= */
+
+/* General rule for the entire page body */
+body {
+    font-family: Arial, sans-serif; /* Changes the font to a cleaner one */
+    margin: 40px;                   /* Adds some space around the edges */
+    background-color: #f4f4f4;      /* A very light gray background color */
+}
+
+/* Rule for the main product container */
+/* NOTE: Let's rename this class to be more consistent */
+.product-container {
+    display: flex; /* This is important! It places products next to each other */
+    gap: 20px;     /* Adds a 20px gap between each product */
+}
+
+/* Rule for each individual product card */
+/* NOTE: Let's rename this class to be more consistent */
+.product-card {
+    background-color: #ffffff;  /* White background for the card */
+    border: 1px solid #dddddd;  /* A light gray border */
+    border-radius: 8px;         /* Rounds the corners */
+    padding: 20px;              /* Adds internal space so text doesn't touch the edges */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* A subtle shadow to give it depth */
+    text-align: center;         /* Centers the text within the card */
+}
+
+/* --- Styles for Flash Messages --- */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    opacity: 1; /* Fully visible by default */
+    transition: opacity 0.5s ease-out; /* Animation will last 0.5s with a smooth fade */
+}
+
+/* When we add the 'fade-out' class, it becomes invisible */
+.alert.fade-out {
+    opacity: 0; /* Fully invisible */
+}
+
+/* Color for success messages (green) */
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+/* Color for error or danger messages (red) */
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+/* Color for warning messages (yellow) */
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+/* --- Styles for Order History Cards --- */
+.order-card {
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}

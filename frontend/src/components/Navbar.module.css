@@ -1,0 +1,60 @@
+/* ================================================================= */
+/* FILE: Navbar.module.css (FULL AND TRANSLATED VERSION)             */
+/* ================================================================= */
+
+/* 
+  This is the main container for the navigation bar.
+  We use Flexbox to align its children (the title and the nav links).
+*/
+.navbar {
+  display: flex;
+  /* Pushes the h1 and nav elements to opposite ends of the container. */
+  justify-content: space-between;
+  /* Aligns items vertically in the center. */
+  align-items: center;
+  /* Adds padding: 1rem top/bottom, 2rem left/right. */
+  padding: 1rem 2rem;
+  background-color: #333;
+  color: white;
+}
+.titleLink {
+  color: white;
+  text-decoration: none;
+  font-size: 1.5rem; /* Un poco más grande para destacar */
+}
+/* 
+  This styles the navigation links container.
+*/
+.navLinks a {
+  color: white;
+  /* Removes the default ugly underline from links. */
+  text-decoration: none;
+  /* Adds space to the left of each link to separate them. */
+  margin-left: 1.5rem;
+  font-size: 1.1rem;
+  transition: color 0.2s ease-in-out; /* Adds a smooth transition for the hover effect */
+}
+
+/* 
+  This handles the hover effect for the links.
+  The color changes when the user's mouse is over the link.
+*/
+.navLinks a:hover {
+  color: #67e9c8; /* The original theme color */
+}
+.logoutButton {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-family: inherit; /* Usa la misma fuente que el resto */
+  font-size: 1.1rem; /* El mismo tamaño que los otros enlaces */
+  margin-left: 1.5rem;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+.logoutButton:hover {
+  color: #67e9c8; /* Mismo efecto hover que los enlaces */
+}

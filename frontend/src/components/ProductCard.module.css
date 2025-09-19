@@ -1,0 +1,93 @@
+/* ================================================================= */
+/* FILE: ProductCard.module.css (FULL AND TRANSLATED VERSION)        */
+/* ================================================================= */
+
+/* 
+  This is the main container for the product card.
+*/
+.card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  /* Add a smooth transition for the hover effect. */
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+/* 
+  This creates a subtle "lift" effect when the user hovers over the card,
+  making the interface feel more interactive.
+*/
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 
+  Styles for the product image.
+*/
+.image {
+  max-width: 100%;
+  height: 200px;
+  /* Ensures the image covers the area without being distorted. */
+  object-fit: cover; 
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+/* 
+  Styles for the product name.
+*/
+.name {
+  font-size: 1.25rem;
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+/* 
+  Styles for the product price.
+*/
+.price {
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+/* 
+  Styles for the remaining stock text.
+*/
+.stock {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* 
+  Styles for the "Add to Cart" button.
+*/
+.button {
+  background-color: #333;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  /* Add a smooth transition for the hover effect. */
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+/* 
+  Hover effect for the button.
+*/
+.button:hover {
+  background-color: #67e9c8;
+  color: #333;
+}
+.productLink {
+  text-decoration: none;
+  color: inherit;
+}

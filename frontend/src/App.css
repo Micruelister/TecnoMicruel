@@ -1,0 +1,34 @@
+/* ================================================================= */
+/* FILE: App.css (FULL AND TRANSLATED VERSION)                       */
+/* ================================================================= */
+
+/* 
+  This class creates a main container for our content.
+  It sets a maximum width and centers it horizontally on the page.
+*/
+.container {
+  max-width: 1200px;
+  /* 2rem of margin on top/bottom, and 'auto' on left/right to center it. */
+  margin: 2rem auto; 
+  /* 2rem of padding on the sides to prevent content from touching the screen edges. */
+  padding: 0 2rem;
+}
+
+/* Styles for the main headline within the container. */
+.container h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+/* 
+  This class defines the grid layout for our products.
+  Using CSS Grid is a modern and powerful way to create layouts.
+*/
+.product-grid {
+  display: grid;
+  /* This creates 3 columns of equal fraction (1fr) of the available space. */
+  grid-template-columns: repeat(3, 1fr); 
+  /* This sets the gap (spacing) between grid items, both horizontally and vertically. */
+  gap: 2rem; 
+}

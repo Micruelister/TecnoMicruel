@@ -1,0 +1,46 @@
+<!-- ================================================================= -->
+<!-- FILE: create_product.html (FULL AND TRANSLATED VERSION)         -->
+<!-- ================================================================= -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Add New Product - Admin</title>
+</head>
+<body>
+    <header>
+        <!-- Note: The function is now 'manage_inventory' to go back to the list -->
+        <a href="{{ url_for('manage_inventory') }}"><h1>Admin Panel</h1></a>
+    </header>
+    <main>
+        <h2>Add a New Product to Inventory</h2>
+        <!-- Note: The function is now 'create_product' -->
+        <form action="{{ url_for('create_product') }}" method="POST" enctype="multipart/form-data">
+            <div>
+                <!-- The 'for' and 'name' attributes now match the English model fields -->
+                <label for="name">Product Name:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div>
+                <label for="price">Price:</label>
+                <input type="number" id="price" name="price" step="0.01" required>
+            </div>
+            <div>
+                <label for="stock">Initial Stock:</label>
+                <input type="number" id="stock" name="stock" required>
+            </div>
+            <div>
+                <label for="image">Product Image:</label>
+                <!-- The 'name' attribute is 'image' which Flask will look for in request.files -->
+                <input type="file" id="image" name="image" accept="image/png, image/jpeg, image/jpg">
+            </div>
+            <button type="submit">Save Product</button>
+        </form>
+    </main>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!-- ================================================================= -->
+<!-- FILE: my_account.html (FULL AND TRANSLATED VERSION)             -->
+<!-- ================================================================= -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>My Account</title>
+</head>
+<body>
+    <header>
+        <!-- Note: The function is now 'home' -->
+        <a href="{{ url_for('home') }}"><h1>My Online Store</h1></a>
+    </header>
+    <main>
+        <h2>My Account</h2>
+
+        <!-- User Information Section -->
+        <div class="user-info-card">
+            <h3>Account Information</h3>
+            <!-- Using the translated User model fields: username, email -->
+            <p><strong>Username:</strong> {{ user.username }}</p>
+            <p><strong>Email Address:</strong> {{ user.email }}</p>
+            <!-- A placeholder for future functionality -->
+            <!-- An "Edit Profile" button could be added here in the future -->
+        </div>
+
+        <!-- Order History Section -->
+        <div class="order-history">
+            <h3>My Order History</h3>
+            <!-- Note: The variable is now 'orders' -->
+            {% if orders %}
+                {% for order in orders %}
+                    <div class="order-card">
+                        <!-- Using the translated Order model fields -->
+                        <h4>Order #{{ order.id }}</h4>
+                        <p><strong>Date:</strong> {{ order.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <p><strong>Shipping Address:</strong> {{ order.shipping_address }}</p>
+                        <ul>
+                            <!-- Looping through the products in the order -->
+                            {% for item in order.products %}
+                                <li>{{ item.product.name }} (x{{ item.quantity }})</li>
+                            {% endfor %}
+                        </ul>
+                        <p class="pedido-total"><strong>Order Total: ${{ "%.2f"|format(order.total) }}</strong></p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>You have not placed any orders yet.</p>
+            {% endif %}
+        </div>
+    </main>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

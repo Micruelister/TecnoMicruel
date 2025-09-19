@@ -1,0 +1,19 @@
+# Archivos de Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Archivos de Node.js
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+npm-debug.log
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de secretos y variables de entorno
+.env
+*/.env

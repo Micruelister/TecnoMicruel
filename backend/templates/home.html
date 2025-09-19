@@ -1,0 +1,79 @@
+<!-- ================================================================= -->
+<!-- FILE: home.html (FULL AND TRANSLATED VERSION)                   -->
+<!-- ================================================================= -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Online Store</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+    <header>
+        <h1>Welcome to My Online Store!</h1>
+        <nav>
+            <a href="{{ url_for('view_cart') }}">View Cart</a>
+            
+            <!-- Logic to display links depending on whether the user is logged in -->
+            {% if 'user_id' in session %}
+                <a href="{{ url_for('my_account') }}">My Account</a>
+    
+                <!-- Check if the user is an administrator -->
+                {% if session.get('is_admin') %}
+                    <a href="{{ url_for('manage_inventory') }}">Manage Inventory</a>
+                {% endif %}
+    
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}">Create Account</a>
+            {% endif %}
+            
+        </nav>
+    </header>
+
+    <main>
+        <!-- Block to display Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <h2>Featured Products</h2>
+        <div class="product-container">
+            <!-- Note: The variable is now 'products' (plural) -->
+            {% for product in products %} 
+                <div class="product-card">
+                    {% if product.image_filename %}
+                        <img src="{{ url_for('static', filename='uploads/products/' + product.image_filename) }}" alt="{{ product.name }}" style="max-width: 100%; height: auto;">
+                    {% endif %}
+                    <h3>
+                        <!-- Note: The function is now 'product_detail' -->
+                        <a href="{{ url_for('product_detail', product_id=product.id) }}">{{ product.name }}</a>
+                    </h3>
+                    <p>Price: ${{ "%.2f"|format(product.price) }}</p>
+                    
+                    <!-- Note: The function is now 'add_to_cart' -->
+                    <form action="{{ url_for('add_to_cart', product_id=product.id) }}" method="POST">
+                        <button type="submit">Add to Cart</button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+
+
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

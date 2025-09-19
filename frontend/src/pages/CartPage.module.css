@@ -1,0 +1,177 @@
+/* ================================================================= */
+/* FILE: CartPage.module.css (FULL VERSION WITH COLOR FIXES)         */
+/* ================================================================= */
+
+/* --- Main Layout --- */
+.cartLayout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+/* --- Cart Items List (Left Column) --- */
+.cartItems {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cartItem {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  /* Dark background color, as shown in your screenshot */
+  background-color: #0d2137; /* Example dark blue, adjust if needed */
+  /* --- COLOR FIX: Default text color is now white --- */
+  color: white; 
+  padding: 1.5rem; /* Increased padding */
+  border-radius: 12px; /* Smoother corners */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.itemImage {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px; /* Smoother corners for the image */
+  background-color: white; /* Add a white background in case image is transparent */
+}
+
+.itemDetails {
+  flex-grow: 1;
+}
+
+.itemDetails h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  /* --- COLOR FIX: Ensure heading is white --- */
+  color: white; 
+}
+
+.itemDetails p {
+  margin: 0.25rem 0;
+}
+
+.unitPrice {
+  font-size: 0.9rem;
+  /* --- COLOR FIX: A light gray for secondary text --- */
+  color: #cccccc; 
+  margin-bottom: 1rem !important;
+}
+
+.quantityControl {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.quantityControl > span:first-of-type {
+  margin-right: 0.5rem;
+  font-size: 0.9rem;
+  /* --- COLOR FIX: Light gray for the "Quantity" label --- */
+  color: #cccccc; 
+}
+
+.quantityControl button {
+  width: 30px;
+  height: 30px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  background-color: #f9f9f9;
+  /* Text inside buttons should be dark to contrast with the light button background */
+  color: #333; 
+  border-radius: 4px;
+}
+
+.quantityControl span {
+  min-width: 20px;
+  text-align: center;
+  font-weight: bold;
+  /* --- COLOR FIX: Ensure the quantity number is white --- */
+  color: white; 
+}
+
+/* --- Item Actions (Right side of each cart item) --- */
+.itemActions {
+  text-align: right;
+}
+
+.itemSubtotal {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  /* --- COLOR FIX: Ensure subtotal is white --- */
+  color: white; 
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  /* --- COLOR FIX: A brighter red for better contrast on a dark background --- */
+  color: #ff5252; 
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.removeButton:hover {
+  color: #ff7b7b;
+}
+
+/* --- Cart Header Actions (e.g., Clear Cart button) --- */
+.cartActionsHeader {
+  text-align: right;
+  margin-bottom: 1rem;
+}
+
+.clearCartButton {
+  background: none;
+  border: 1px solid #c0392b;
+  color: #c0392b;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.clearCartButton:hover {
+  background-color: #c0392b;
+  color: white;
+}
+
+/* --- Order Summary (Right Column) --- */
+/* The summary box has a light background, so its text should be dark */
+.cartSummary {
+  background-color: #ffffff; /* Light background */
+  color: #333; /* Dark text for the summary box */
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 2rem;
+}
+
+.cartSummary h3 {
+  margin-top: 0;
+  color: #333; /* Ensure heading is dark */
+}
+
+.summaryLine {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  color: #555; /* Dark gray for summary text */
+}
+
+.total {
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #333; /* Dark for the total */
+}

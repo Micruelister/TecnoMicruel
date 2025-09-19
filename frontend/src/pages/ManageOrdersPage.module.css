@@ -1,0 +1,10 @@
+.ordersContainer { display: flex; flex-direction: column; gap: 1.5rem; }
+.orderCard { background-color: white; color: #333; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.orderHeader { display: flex; justify-content: space-between; padding: 1rem 1.5rem; background-color: #f9f9f9; border-bottom: 1px solid #ddd; border-radius: 8px 8px 0 0; }
+.orderHeader h3, .orderHeader span { margin: 0; }
+.orderHeader span { color: #777; }
+.orderDetails { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.5rem; }
+.orderItems { padding: 0 1.5rem 1.5rem 1.5rem; }
+.orderItems h4 { margin-top: 0; }
+.orderItems ul { margin: 0; padding-left: 20px; }
+

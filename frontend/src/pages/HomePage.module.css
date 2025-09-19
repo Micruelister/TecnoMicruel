@@ -1,0 +1,62 @@
+/* Contenido para frontend/src/pages/HomePage.module.css */
+
+.searchContainer {
+  margin-bottom: 2.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.searchInput {
+  width: 100%;
+  max-width: 600px;
+  padding: 1rem;
+  font-size: 1.1rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #67e9c8;
+  box-shadow: 0 0 0 3px rgba(103, 233, 200, 0.3);
+}
+
+.noResults {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #777;
+  margin-top: 2rem;
+}
+.filterContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filterContainer p {
+  font-weight: bold;
+}
+
+.filterButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background-color: white;
+  border-radius: 20px; /* Píldoras */
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filterButton:hover {
+  background-color: #f0f0f0;
+}
+
+/* Estilo para el botón de filtro activo */
+.filterButton.active {
+  background-color: #333;
+  color: white;
+  border-color: #333;
+}

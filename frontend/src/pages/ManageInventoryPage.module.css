@@ -1,0 +1,78 @@
+/* Contenido para frontend/src/pages/ManageInventoryPage.module.css */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.addButton {
+  background-color: #333;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.addButton:hover {
+  background-color: #67e9c8;
+  color: #333;
+}
+
+.inventoryTable {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden; /* Ensures the border-radius clips the table content */
+  color: #333; /* Dark text for readability on a white background */
+}
+
+.inventoryTable th, .inventoryTable td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.inventoryTable th {
+  background-color: #f9f9f9;
+  font-weight: bold;
+}
+
+.inventoryTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.inventoryTable tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+.inventoryTable img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.actionButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  background-color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.deleteButton {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+.deleteButton:hover {
+  background-color: #c0392b;
+  color: white;
+}

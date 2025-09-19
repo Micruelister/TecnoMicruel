@@ -1,0 +1,33 @@
+.footer {
+  background-color: #2c3e50; /* Un color oscuro que combine con el fondo */
+  color: #ecf0f1; /* Texto claro */
+  padding: 2rem 0;
+  margin-top: 4rem; /* Añade un buen espacio por encima del footer */
+  border-top: 3px solid #67e9c8; /* Un acento con el color de nuestro tema */
+}
+
+.footerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* Permite que los elementos se apilen en pantallas pequeñas */
+  gap: 1rem;
+}
+
+.footerLinks {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footerLinks a {
+  color: #ecf0f1;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footerLinks a:hover {
+  color: #67e9c8;
+}

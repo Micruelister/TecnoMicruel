@@ -1,0 +1,47 @@
+<!-- ================================================================= -->
+<!-- FILE: checkout_page.html (FULL AND TRANSLATED VERSION)          -->
+<!-- ================================================================= -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Checkout</title>
+</head>
+<body>
+    <header>
+        <!-- Note: The function is now 'home' -->
+        <a href="{{ url_for('home') }}"><h1>My Online Store</h1></a>
+    </header>
+    <main>
+        <h2>Finalize Your Purchase</h2>
+        <div class="checkout-container">
+            <div class="order-summary">
+                <h3>Your Order Summary</h3>
+                <!-- Note: The variables are now in English -->
+                {% for item in cart_items %}
+                    <p>{{ item.product.name }} (x{{ item.quantity }}) - ${{ "%.2f"|format(item.subtotal) }}</p>
+                {% endfor %}
+                <hr>
+                <h4>Total: ${{ "%.2f"|format(total_price) }}</h4>
+            </div>
+
+            <div class="shipping-form">
+                <h3>Shipping Address</h3>
+                <!-- Note: The function is now 'checkout' -->
+                <form action="{{ url_for('checkout') }}" method="POST">
+                    <div>
+                        <label for="address">Full Address:</label>
+                        <textarea id="address" name="address" rows="4" required></textarea>
+                    </div>
+                    <button type="submit">Proceed to Payment</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
