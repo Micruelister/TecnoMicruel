@@ -17,3 +17,7 @@ Thumbs.db
 # Archivos de secretos y variables de entorno
 .env
 */.env
+
+# Archivos de build de Frontend
+frontend/dist/
+frontend/dist-ssr/
