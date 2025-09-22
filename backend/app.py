@@ -38,7 +38,7 @@ if database_url and database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'static/uploads/products')
+app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'frontend/public/uploads/products')
 stripe.api_key = os.getenv('STRIPE_API_KEY')
 from flask_migrate import Migrate
 # --- Extensions ---
