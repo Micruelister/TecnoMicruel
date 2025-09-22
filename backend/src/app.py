@@ -124,10 +124,12 @@ def api_login_required(f):
 # --- Product API ---
 @app.route('/api/products', methods=['GET'])
 def get_products():
+    base_url = request.host_url
     products = Product.query.all()
     products_list = []
     for product in products:
-        image_urls = [url_for('static', filename=f'uploads/products/{image.filename}', _external=True) for image in product.images]
+        image_urls = [f"{base_url}static/uploads/products/{image.filename}" for image in product.images]
+        
         product_data = {
             'id': product.id,
             'name': product.name,
@@ -143,8 +145,9 @@ def get_products():
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
+    base_url = request.host_url
     product = Product.query.get_or_404(product_id)
-    image_urls = [url_for('static', filename=f'uploads/products/{image.filename}', _external=True) for image in product.images]
+    image_urls = [f"{base_url}static/uploads/products/{image.filename}" for image in product.images]
     product_data = {
         'id': product.id,
         'name': product.name,
