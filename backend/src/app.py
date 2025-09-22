@@ -41,11 +41,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'static/uploads/products')
 stripe.api_key = os.getenv('STRIPE_API_KEY')
-
+from flask_migrate import Migrate
 # --- Extensions ---
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
-
+migrate = Migrate(app, db)
 # =================================================================
 # SECTION 3: DATA MODELS
 # =================================================================
