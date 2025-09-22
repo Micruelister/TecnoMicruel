@@ -45,6 +45,19 @@ from flask_migrate import Migrate
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 migrate = Migrate(app, db)
+
+# En backend/app.py
+
+bcrypt = Bcrypt(app)
+
+# --- RUTA DE PRUEBA SIMPLE ---
+@app.route('/')
+def index():
+    return "Hello, Render! The server is running."
+
+# =================================================================
+# DATA MODELS
+# ... (el resto del archivo no cambia)
 # =================================================================
 # SECTION 3: DATA MODELS
 # =================================================================
