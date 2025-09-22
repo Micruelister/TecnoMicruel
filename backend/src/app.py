@@ -16,7 +16,7 @@ import stripe
 from flask_session import Session
 
 # --- App Initialization ---
-app = Flask(__name__, template_folder='../templates', static_folder='../static')
+app = Flask(__name__, static_folder='../static')
 load_dotenv()
 
 # --- Configurations ---
@@ -31,7 +31,6 @@ app.config['SESSION_COOKIE_SECURE'] = True
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 Session(app) # Initialize Session
-
 CORS(app, origins="http://localhost:5173", supports_credentials=True)
 
 database_url = os.getenv('DATABASE_URL')
@@ -122,7 +121,7 @@ def api_login_required(f):
 # =================================================================
 
 # --- Product API ---
-@api_bp.route('/api/products', methods=['GET'])
+@app.route('/api/products', methods=['GET'])
 def get_products():
     base_url = request.host_url
     products = Product.query.all()
@@ -143,7 +142,7 @@ def get_products():
         products_list.append(product_data)
     return jsonify(products_list)
 
-@api_bp.route('/api/products/<int:product_id>', methods=['GET'])
+@app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
     base_url = request.host_url
     product = Product.query.get_or_404(product_id)
@@ -161,7 +160,7 @@ def get_product(product_id):
     return jsonify(product_data)
 
 # --- Auth API ---
-@api_bp.route('/api/register', methods=['POST'])
+@app.route('/api/register', methods=['POST'])
 def api_register():
     data = request.get_json()
     if not data or not data.get('username') or not data.get('email') or not data.get('password'):
@@ -175,7 +174,7 @@ def api_register():
     db.session.commit()
     return jsonify({"message": "User created successfully!"}), 201
 
-@api_bp.route('/api/login', methods=['POST'])
+@app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.get_json()
     if not data or not data.get('email') or not data.get('password'):
@@ -195,13 +194,13 @@ def api_login():
     else:
         return jsonify({"message": "Invalid credentials"}), 401
 
-@api_bp.route('/api/logout', methods=['POST'])
+@app.route('/api/logout', methods=['POST'])
 def api_logout():
     session.clear()
     return jsonify({"message": "Logout successful"}), 200
 
 # --- Checkout API ---
-@api_bp.route('/api/create-checkout-session', methods=['POST'])
+@app.route('/api/create-checkout-session', methods=['POST'])
 @api_login_required
 def create_checkout_session():
     data = request.get_json()
@@ -225,7 +224,7 @@ def create_checkout_session():
     except Exception as e:
         return jsonify(error=str(e)), 500
 
-@api_bp.route('/api/order/verify', methods=['POST'])
+@app.route('/api/order/verify', methods=['POST'])
 @api_login_required
 def verify_order():
     data = request.get_json()
@@ -271,7 +270,7 @@ def verify_order():
         return jsonify(error=str(e)), 500
 
 # --- User Account API ---
-@api_bp.route('/api/my-orders', methods=['GET'])
+@app.route('/api/my-orders', methods=['GET'])
 @api_login_required
 def get_my_orders():
     user_id = session.get('user_id')
@@ -299,7 +298,7 @@ def get_my_orders():
         orders_list.append(order_data)
     return jsonify(orders_list), 200
 
-@api_bp.route('/api/user/profile', methods=['GET'])
+@app.route('/api/user/profile', methods=['GET'])
 @api_login_required
 def get_user_profile():
     user_id = session.get('user_id')
@@ -311,7 +310,7 @@ def get_user_profile():
     }
     return jsonify(profile_data), 200
 
-@api_bp.route('/api/user/profile', methods=['PUT'])
+@app.route('/api/user/profile', methods=['PUT'])
 @api_login_required
 def update_user_profile():
     user_id = session.get('user_id')
@@ -344,7 +343,7 @@ def update_user_profile():
     }
     return jsonify({"message": "Profile updated successfully!", "user": updated_user_data}), 200
 
-@api_bp.route('/api/user/change-password', methods=['POST'])
+@app.route('/api/user/change-password', methods=['POST'])
 @api_login_required
 def change_password():
     user_id = session.get('user_id')
@@ -376,7 +375,7 @@ def change_password():
     return jsonify({"message": "Password updated successfully!"}), 200
 
 # --- Admin Product Management API ---
-@api_bp.route('/admin/product/new', methods=['POST'])
+@app.route('/admin/product/new', methods=['POST'])
 @api_login_required
 def create_product():
     if not session.get('is_admin'):
@@ -413,7 +412,7 @@ def create_product():
     db.session.commit()
     return jsonify({"message": "Product created successfully!", "productId": new_product.id}), 201
 
-@api_bp.route('/api/products/<int:product_id>', methods=['POST'])
+@app.route('/api/products/<int:product_id>', methods=['POST'])
 @api_login_required
 def update_product(product_id):
     if not session.get('is_admin'):
@@ -445,7 +444,7 @@ def update_product(product_id):
     db.session.commit()
     return jsonify({"message": f"Product '{product_to_update.name}' updated successfully"}), 200
 
-@api_bp.route('/api/products/<int:product_id>', methods=['DELETE'])
+@app.route('/api/products/<int:product_id>', methods=['DELETE'])
 @api_login_required
 def delete_api_product(product_id):
     if not session.get('is_admin'):
@@ -461,7 +460,7 @@ def delete_api_product(product_id):
     return jsonify({"message": f"Product '{product_to_delete.name}' deleted successfully"}), 200
 
 # --- API: Admin Order Management ---
-@api_bp.route('/api/admin/orders', methods=['GET'])
+@app.route('/api/admin/orders', methods=['GET'])
 @api_login_required
 def get_all_orders():
     if not session.get('is_admin'):
@@ -498,7 +497,7 @@ def get_all_orders():
         orders_list.append(order_data)
 
     return jsonify(orders_list), 200
-@api_bp.route('/api/admin/test', methods=['POST'])
+@app.route('/api/admin/test', methods=['POST'])
 @api_login_required
 def admin_test():
     user_id = session.get('user_id')
