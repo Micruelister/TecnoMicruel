@@ -425,7 +425,7 @@ def create_product():
     db.session.commit()
     return jsonify({"message": "Product created successfully!", "productId": new_product.id}), 201
 
-@app.route('/api/products/<int:product_id>', methods=['POST'])
+@app.route('/api/products/<int:product_id>', methods=['PUT'])
 @api_login_required
 def update_product(product_id):
     if not session.get('is_admin'):

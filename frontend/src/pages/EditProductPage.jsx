@@ -70,7 +70,7 @@ function EditProductPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSaving(true);
-    const dataToSubmit = new FormData();
+    const formData = new FormData();
     // Append all text data
     for (const key in formData) {
       dataToSubmit.append(key, formData[key]);
@@ -84,7 +84,7 @@ function EditProductPage() {
 
     try {
       // Note: We are using POST here as specified in the backend route
-      const response = await axiosInstance.post(`/api/products/${id}`, dataToSubmit);
+      const response = await axiosInstance.put(`/api/products/${id}`, formData);
       toast.success(response.data.message);
       navigate('/admin/inventory');
     } catch (error) {
