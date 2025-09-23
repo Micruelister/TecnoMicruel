@@ -18,6 +18,7 @@ from flask_migrate import Migrate
 from werkzeug.middleware.proxy_fix import ProxyFix
 # --- App Initialization & Config ---
 app = Flask(__name__, static_folder='../static')
+print("--- FLASK APP INITIALIZING ---") # Punto de control A
 load_dotenv()
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -119,25 +120,32 @@ def api_login_required(f):
 # --- Product API ---
 @app.route('/api/products', methods=['GET'])
 def get_products():
-    base_url = request.host_url.replace("http://", "https://")
-    
-    products = Product.query.all()
-    products_list = []
-    for product in products:
-        image_urls = [f"{base_url}static/uploads/products/{image.filename}" for image in product.images]
+    print("--- ROUTE /api/products HIT! ---") # Punto de control B
+    try:
+        base_url = request.host_url.replace("http://", "https://")
         
-        product_data = {
-            'id': product.id,
-            'name': product.name,
-            'price': product.price,
-            'stock': product.stock,
-            'description': product.description,
-            'brand': product.brand,
-            'imageUrls': image_urls, 
-            'thumbnailUrl': image_urls[0] if image_urls else None 
-        }
-        products_list.append(product_data)
-    return jsonify(products_list)
+        products = Product.query.all()
+        products_list = []
+        for product in products:
+            image_urls = [f"{base_url}static/uploads/products/{image.filename}" for image in product.images]
+            
+            product_data = {
+                'id': product.id,
+                'name': product.name,
+                'price': product.price,
+                'stock': product.stock,
+                'description': product.description,
+                'brand': product.brand,
+                'imageUrls': image_urls, 
+                'thumbnailUrl': image_urls[0] if image_urls else None 
+            }
+            products_list.append(product_data)
+        
+        print(f"--- Found {len(products_list)} products. Sending JSON response. ---") # Punto de control C
+        return jsonify(products_list)
+    except Exception as e:
+        print(f"--- ERROR in /api/products: {e} ---") # Punto de control de Error
+        return jsonify({"error": "An error occurred"}), 500
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
@@ -501,6 +509,8 @@ def admin_test():
     user = User.query.get(user_id)
     return jsonify({"message": f"Hello, admin {user.username}! Your test was successful."}), 200
 
+
+
 # =================================================================
 # SECTION 7: SERVER STARTUP
 # =================================================================
@@ -508,3 +518,5 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, port=5000)
+    
+print("--- END OF app.py FILE REACHED ---") # Punto de control D
