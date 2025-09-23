@@ -6,7 +6,7 @@ import uuid
 from functools import wraps
 
 from dotenv import load_dotenv
-from flask import (Flask, jsonify, request, session, Blueprint)
+from flask import (Flask, jsonify, request, session)
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -14,46 +14,29 @@ from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 import stripe
 from flask_session import Session
-
-# --- App Initialization ---
+from flask_migrate import Migrate
+from werkzeug.middleware.proxy_fix import ProxyFix
+# --- App Initialization & Config ---
 app = Flask(__name__, static_folder='../static')
 load_dotenv()
-
-# --- Configurations ---
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-
-# Flask-Session Configuration
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True
-api_bp = Blueprint('api', __name__, url_prefix='/api')
-
-Session(app) # Initialize Session
+Session(app)
 CORS(app, origins="http://localhost:5173", supports_credentials=True)
-
-database_url = os.getenv('DATABASE_URL')
-if database_url and database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'frontend/public/uploads/products')
 stripe.api_key = os.getenv('STRIPE_API_KEY')
-from flask_migrate import Migrate
+
 # --- Extensions ---
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 migrate = Migrate(app, db)
-
-# En backend/app.py
-
-bcrypt = Bcrypt(app)
-
-# --- RUTA DE PRUEBA SIMPLE ---
-@app.route('/')
-def index():
-    return "Hello, Render! The server is running."
 
 # =================================================================
 # DATA MODELS
@@ -136,7 +119,8 @@ def api_login_required(f):
 # --- Product API ---
 @app.route('/api/products', methods=['GET'])
 def get_products():
-    base_url = request.host_url
+    base_url = request.host_url.replace("http://", "https://")
+    
     products = Product.query.all()
     products_list = []
     for product in products:
@@ -517,7 +501,6 @@ def admin_test():
     user = User.query.get(user_id)
     return jsonify({"message": f"Hello, admin {user.username}! Your test was successful."}), 200
 
-app.register_blueprint(api_bp)
 # =================================================================
 # SECTION 7: SERVER STARTUP
 # =================================================================
