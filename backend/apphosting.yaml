@@ -1,0 +1,6 @@
+# This file configures the App Hosting backend.
+# It tells App Hosting which secrets the application needs to run.
+runEnvironment:
+  secrets:
+    - secret: SECRET_KEY
+    - secret: STRIPE_API_KEY
