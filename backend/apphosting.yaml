@@ -4,3 +4,4 @@ runEnvironment:
   secrets:
     - secret: SECRET_KEY
     - secret: STRIPE_API_KEY
+    - secret: DATABASE_URL
