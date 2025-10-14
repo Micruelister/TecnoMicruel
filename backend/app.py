@@ -1,5 +1,5 @@
 # =================================================================
-# FILE: app.py (Refactored to use models.py)
+# FILE: app.py (Refactored to use models.py and admin decorator)
 # =================================================================
 import os
 import re # Import re for regular expressions
@@ -83,6 +83,17 @@ def api_login_required(f):
             return jsonify({"message": "Authentication required"}), 401
         return f(*args, **kwargs)
     return decorated_function
+
+def api_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({"message": "Authentication required"}), 401
+        if not session.get('is_admin'):
+            return jsonify({"message": "Admin access required"}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 # =================================================================
 # API ROUTES
@@ -376,10 +387,8 @@ def change_password():
 
 # --- Admin Product Management API ---
 @app.route('/admin/product/new', methods=['POST'])
-@api_login_required
+@api_admin_required
 def create_product():
-    if not session.get('is_admin'):
-        return jsonify({"message": "Admin access required"}), 403
     if 'name' not in request.form or 'price' not in request.form or 'stock' not in request.form:
         return jsonify({"message": "Name, price, and stock are required fields."}), 400
     new_product = Product(
@@ -409,11 +418,8 @@ def create_product():
     return jsonify({"message": "Product created successfully!", "productId": new_product.id}), 201
 
 @app.route('/api/products/<int:product_id>', methods=['PUT'])
-@api_login_required
+@api_admin_required
 def update_product(product_id):
-    if not session.get('is_admin'):
-        return jsonify({"message": "Admin access required"}), 403
-
     product_to_update = Product.query.get_or_404(product_id)
     
     product_to_update.name = request.form.get('name', product_to_update.name)
@@ -437,10 +443,8 @@ def update_product(product_id):
     return jsonify({"message": f"Product '{product_to_update.name}' updated successfully"}), 200
 
 @app.route('/api/products/<int:product_id>', methods=['DELETE'])
-@api_login_required
+@api_admin_required
 def delete_api_product(product_id):
-    if not session.get('is_admin'):
-        return jsonify({"message": "Admin access required"}), 403
     product_to_delete = Product.query.get_or_404(product_id)
     for image in product_to_delete.images:
         try:
@@ -453,11 +457,8 @@ def delete_api_product(product_id):
 
 # --- API: Admin Order Management ---
 @app.route('/api/admin/orders', methods=['GET'])
-@api_login_required
+@api_admin_required
 def get_all_orders():
-    if not session.get('is_admin'):
-        return jsonify({"message": "Admin access required"}), 403
-
     orders = Order.query.order_by(Order.date.desc()).all()
     orders_list = []
     for order in orders:
@@ -482,7 +483,7 @@ def get_all_orders():
     return jsonify(orders_list), 200
 
 @app.route('/api/admin/test', methods=['POST'])
-@api_login_required
+@api_admin_required
 def admin_test():
     user_id = session.get('user_id')
     user = User.query.get(user_id)
