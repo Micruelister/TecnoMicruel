@@ -1,113 +1,112 @@
 // =================================================================
-// FILE: HomePage.jsx (WITH REAL-TIME CLIENT-SIDE SEARCH)
-// PURPOSE: Displays the main product grid and allows users to search.
+// FILE: HomePage.jsx (WITH SERVER-SIDE SEARCH & FILTER)
+// PURPOSE: Displays product grid, fetches filtered data from the server.
 // =================================================================
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ProductCard from '../components/ProductCard.jsx';
 import axiosInstance from '../api/axiosInstance.js';
-import styles from './HomePage.module.css'; // Styles for the search bar
-import '../App.css'; // For the global .container and .product-grid classes
+import styles from './HomePage.module.css';
+import '../App.css'; 
 
 function HomePage() {
   // --- STATE MANAGEMENT ---
-
-  // State to store the full list of products fetched from the API.
-  // This original list never changes after being fetched.
   const [products, setProducts] = useState([]);
-
-  // State to store the user's current search input.
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('All');
-  // State to manage the initial loading message.
-  const [loading, setLoading] = useState(true);
+  const [brands, setBrands] = useState(['All']);
 
   // --- DATA FETCHING ---
 
-  // useEffect hook to fetch products from the backend API when the component mounts.
+  // 1. Fetch available brands for the filter UI
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchBrands = async () => {
       try {
-        setLoading(true);
-        const response = await axiosInstance.get('/api/products');
-        setProducts(response.data);
+        const response = await axiosInstance.get('/api/brands');
+        setBrands(['All', ...response.data]); // Add 'All' to the list of brands from the API
       } catch (error) {
-        console.error("Error fetching products:", error);
-        // In a real app, you might set an error state here to show a message.
-      } finally {
-        setLoading(false);
+        console.error("Error fetching brands:", error);
       }
     };
+    fetchBrands();
+  }, []); // Runs once on component mount
 
-    fetchProducts();
-  }, []); // The empty dependency array [] means this effect runs only once.
+  // 2. Fetch products based on current search and brand filters
+  // useCallback memoizes the function to prevent re-creation on every render
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        search: searchTerm,
+        brand: selectedBrand,
+      });
+      const response = await axiosInstance.get(`/api/products?${params}`);
+      setProducts(response.data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      // Consider setting an error state here to show a message to the user
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, selectedBrand]); // Dependencies: re-create the function if these change
 
-  // --- FILTERING LOGIC ---
-  const brands = useMemo(() => {
-    const allBrands = products.map(p => p.brand);
-    // Creamos un Set para obtener solo los valores únicos, y luego lo convertimos a un array.
-    return ['All', ...new Set(allBrands)];
-  }, [products]);
-  // Filter the `products` array based on the `searchTerm`.
-  // This calculation happens on every render, so the list updates instantly as the user types.
-  const filteredProducts = products.filter(product => {
-    // --- FILTER CONDITIONS ---
-    // Convert both the product name and search term to lower case for case-insensitive matching.
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesBrand = selectedBrand === 'All' || product.brand === selectedBrand;
-    return matchesSearch && matchesBrand;
-  });
+  // 3. Debounce the product fetching
+  useEffect(() => {
+    // Set a timer to delay the API call
+    const timerId = setTimeout(() => {
+      fetchProducts();
+    }, 500); // 500ms delay
+
+    // Cleanup: clear the timer if the user types again before the delay is over
+    return () => clearTimeout(timerId);
+  }, [fetchProducts]); // Dependency: the memoized fetch function
 
   // --- RENDER LOGIC ---
-
-  // Display a loading message while the initial product fetch is in progress.
-  if (loading) {
-    return <main className="container"><p>Loading products...</p></main>;
-  }
-
   return (
     <main className="container">
-      {/* Search Bar Input */}
-      <div className={styles.searchContainer}>
-        <input 
-          type="search" // Using type="search" provides a clear 'x' button in some browsers
-          placeholder="Search for products by name..."
-          className={styles.searchInput}
-          value={searchTerm} // The input's value is controlled by our state
-          onChange={(e) => setSearchTerm(e.target.value)} // Update state on every keystroke
-        />
-      </div>
-      
-      <div className={styles.filterContainer}>
-        <p>Filter by Brand:</p>
-        {brands.map(brand => (
-          <button
-            key={brand}
-            className={`${styles.filterButton} ${selectedBrand === brand ? styles.active : ''}`}
-            onClick={() => setSelectedBrand(brand)}
-          >
-            {brand}
-          </button>
-        ))}
-      </div>
-      <h2>Featured Products</h2>
-      
-      <div className="product-grid">
-        {/* We map over the FILTERED list of products, not the original one. */}
-        {filteredProducts.map(product => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+      <div className={styles.controlsContainer}>
+        {/* Search Bar */}
+        <div className={styles.searchContainer}>
+          <input 
+            type="search"
+            placeholder="Search by product name..."
+            className={styles.searchInput}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Brand Filter Buttons */}
+        <div className={styles.filterContainer}>
+          <span>Filter by Brand:</span>
+          <div className={styles.brandButtons}>
+            {brands.map(brand => (
+              <button
+                key={brand}
+                className={`${styles.filterButton} ${selectedBrand === brand ? styles.active : ''}`}
+                onClick={() => setSelectedBrand(brand)}
+              >
+                {brand}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* 
-        Conditional Rendering for "No Results".
-        This message only appears if:
-        1. The filtered list is empty (filteredProducts.length === 0)
-        2. The search term is not empty (searchTerm !== '') 
-           (This prevents the message from showing during the initial load)
-      */}
-      {filteredProducts.length === 0 && searchTerm && (
-        <p className={styles.noResults}>No products found matching your search for "{searchTerm}".</p>
+      <h2>Featured Products</h2>
+
+      {/* Product Grid and Loading/No Results Messages */}
+      {loading ? (
+        <p>Loading products...</p>
+      ) : products.length > 0 ? (
+        <div className="product-grid">
+          {products.map(product => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : (
+        <p className={styles.noResults}>No products found matching your criteria.</p>
       )}
     </main>
   );

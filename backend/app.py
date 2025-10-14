@@ -2,6 +2,7 @@
 # FILE: app.py (Refactored to use models.py)
 # =================================================================
 import os
+import re # Import re for regular expressions
 import uuid
 from functools import wraps
 
@@ -37,15 +38,40 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'frontend/public/uploads/products')
 stripe.api_key = os.getenv('STRIPE_API_KEY')
 
-# Determine the frontend origin from environment variables for flexible CORS
-CORS_ORIGIN = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+# --- CORS Configuration ---
+# Get the frontend URL from environment variables
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
+# Get the Gitpod workspace URL, if it exists
+GITPOD_WORKSPACE_URL = os.getenv('GITPOD_WORKSPACE_URL', '')
+
+# Get the Cloud Workstations URL, if it exists
+CLOUD_WORKSTATIONS_URL = os.getenv('WEB_HOST', '')
+
+# List of allowed origins
+origins = [FRONTEND_URL]
+
+# If in a Gitpod environment, allow its URLs
+if GITPOD_WORKSPACE_URL:
+    # Regex to build the frontend URL from the Gitpod backend URL
+    gitpod_frontend_url = re.sub(r'https://5000-', 'https://5173-', GITPOD_WORKSPACE_URL)
+    origins.append(gitpod_frontend_url)
+
+# If in a Cloud Workstations environment, allow its URLs
+if CLOUD_WORKSTATIONS_URL:
+    # The WEB_HOST variable already includes the protocol and port
+    # We need to replace the port to get the frontend URL
+    # Assuming frontend runs on 5173
+    origins.append(re.sub(r':\d+', ':5173', CLOUD_WORKSTATIONS_URL))
 
 # --- Extensions Initialization ---
 Session(app)
-CORS(app, origins=CORS_ORIGIN, supports_credentials=True)
+# Apply CORS with the dynamic list of origins
+CORS(app, origins=origins, supports_credentials=True)
 bcrypt = Bcrypt(app)
 db.init_app(app)  # Initialize the db with the app
 migrate = Migrate(app, db)
+
 
 # =================================================================
 # DECORATORS
@@ -66,11 +92,29 @@ def api_login_required(f):
 @app.route('/api/products', methods=['GET'])
 def get_products():
     try:
+        # --- SERVER-SIDE SEARCH & FILTER ---
+        search_term = request.args.get('search', '')
+        brand_filter = request.args.get('brand', 'All')
+
+        query = Product.query
+
+        if search_term:
+            # Using ilike for case-insensitive search
+            query = query.filter(Product.name.ilike(f"%{search_term}%"))
+
+        if brand_filter and brand_filter != 'All':
+            query = query.filter_by(brand=brand_filter)
+
+        products = query.order_by(Product.name).all()
+        # --- END OF SERVER-SIDE LOGIC ---
+
         base_url = request.host_url.replace("http://", "https://")
-        products = Product.query.all()
         products_list = []
         for product in products:
+            # Use placeholder.svg if no images exist
             image_urls = [f"{base_url}static/uploads/products/{image.filename}" for image in product.images]
+            thumbnail = image_urls[0] if image_urls else f'{base_url}placeholder.svg'
+            
             product_data = {
                 'id': product.id,
                 'name': product.name,
@@ -79,19 +123,35 @@ def get_products():
                 'description': product.description,
                 'brand': product.brand,
                 'imageUrls': image_urls,
-                'thumbnailUrl': image_urls[0] if image_urls else None
+                'thumbnailUrl': thumbnail
             }
             products_list.append(product_data)
         return jsonify(products_list)
     except Exception as e:
         print(f"--- ERROR in /api/products: {e} ---")
-        return jsonify({"error": "An error occurred"}), 500
+        return jsonify({"error": "An error occurred while fetching products"}), 500
+
+@app.route('/api/brands', methods=['GET'])
+def get_brands():
+    try:
+        # Query distinct brand names, filter out any null/empty brands
+        brands = db.session.query(Product.brand).filter(Product.brand.isnot(None)).distinct().all()
+        # The query returns a list of tuples, so we flatten it
+        brand_list = [brand[0] for brand in brands]
+        return jsonify(brand_list)
+    except Exception as e:
+        print(f"--- ERROR in /api/brands: {e} ---")
+        return jsonify({"error": "An error occurred fetching brands"}), 500
+
 
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
-    base_url = request.host_url
+    base_url = request.host_url.replace("http://", "https://")
     product = Product.query.get_or_404(product_id)
+    
     image_urls = [f"{base_url}static/uploads/products/{image.filename}" for image in product.images]
+    thumbnail = image_urls[0] if image_urls else f'{base_url}placeholder.svg'
+
     product_data = {
         'id': product.id,
         'name': product.name,
@@ -100,9 +160,10 @@ def get_product(product_id):
         'description': product.description,
         'brand': product.brand,
         'imageUrls': image_urls,
-        'thumbnailUrl': image_urls[0] if image_urls else None
+        'thumbnailUrl': thumbnail
     }
     return jsonify(product_data)
+
 
 # --- Auth API ---
 @app.route('/api/register', methods=['POST'])

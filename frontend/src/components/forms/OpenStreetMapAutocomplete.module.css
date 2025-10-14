@@ -1,0 +1,59 @@
+/* =================================================================
+   FILE: OpenStreetMapAutocomplete.module.css
+   ================================================================= */
+
+.container {
+  position: relative;
+  width: 100%;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.suggestionList {
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.suggestionItem {
+  padding: 12px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.activeItem {
+  background-color: #f0f0f0;
+}
+
+/* Updated for OpenStreetMap attribution */
+.osmLogoContainer {
+  padding: 8px 15px;
+  background-color: #f7f7f7;
+  text-align: right;
+}
+
+.osmLogoContainer p {
+  margin: 0;
+  font-size: 10px;
+  color: #777;
+}

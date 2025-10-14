@@ -1,8 +1,8 @@
 // =================================================================
-// FILE: CheckoutPage.jsx (ABSOLUTELY 100% COMPLETE - FINAL VERSION)
+// FILE: CheckoutPage.jsx (REFACTORED FOR OPENSTREETMAP)
 // =================================================================
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useCart } from '../context/CartContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import axiosInstance from '../api/axiosInstance.js';
@@ -14,28 +14,24 @@ import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css'; 
 import FormField from '../components/forms/FormFields.jsx';
 
-// --- Component Imports ---
-import GooglePlacesAutocomplete from '../components/forms/GooglePlacesAutocomplete.jsx';
+// --- Component Imports (Updated) ---
+import OpenStreetMapAutocomplete from '../components/forms/OpenStreetMapAutocomplete.jsx';
 import styles from './CheckoutPage.module.css';
 import '../App.css';
 
-// --- Helper Function ---
-// Extracts a specific address component from the Google Geocode result.
-const extractAddressComponent = (components, type, short = false) => {
-  const component = components.find(c => c.types.includes(type));
-  if (!component) return '';
-  return short ? component.short_name : component.long_name;
-};
-
+// --- Helper Function for Phone Input ---
 function getCountryCode(countryName) {
   if (!countryName) return undefined;
   try {
+    // 'en' specifies to look up the country by its English name.
     return getCountryCodeByName(countryName, 'en');
   } catch (error) {
-    console.warn(`Could not find ISO code for country: ${countryName}`, error);
+    // This can happen if the country name from the API doesn't match the library's data.
+    console.warn(`Could not find ISO code for country: ${countryName}`);
     return undefined;
   }
 }
+
 function CheckoutPage() {
   // --- STATE MANAGEMENT ---
   const { cartItems } = useCart();
@@ -44,7 +40,7 @@ function CheckoutPage() {
   const [address, setAddress] = useState({
     fullName: user?.username || '',
     streetAddress: '',
-    apartmentSuite: '',
+    apartmentSuite: '', // This one is optional
     city: '',
     postalCode: '',
     country: '',
@@ -52,68 +48,57 @@ function CheckoutPage() {
   });
 
   const [loading, setLoading] = useState(false);
+  
+  // Memoized country code for the phone input component.
   const countryCode = useMemo(() => {
     return getCountryCode(address.country);
   }, [address.country]);
 
   // --- EVENT HANDLERS ---
 
-  // Handles manual changes to the form inputs.
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setAddress(prev => ({ ...prev, [name]: value }));
   };
-    const handlePhoneChange = (value) => {
+
+  const handlePhoneChange = (value) => {
     setAddress(prev => ({ ...prev, phoneNumber: value }));
   };
-  // Handles the selection of an address from the Google Autocomplete dropdown.
-const handleAddressSelect = (placeId) => {
-    if (!placeId) return;
-    if (!window.google || !window.google.maps) return;
-    const service = new window.google.maps.places.PlacesService(document.createElement('div'));
-    service.getDetails({ placeId, fields: ['address_components', 'name'] }, (place, status) => {
-      if (status === 'OK' && place && place.address_components) {
-        const components = place.address_components;
-        const streetNumber = extractAddressComponent(components, 'street_number');
-        const route = extractAddressComponent(components, 'route');
-        const formattedStreetAddress = [streetNumber, route].filter(Boolean).join(' ');
-        
-        setAddress(prev => ({
-          ...prev,
-          streetAddress: formattedStreetAddress || place.name,
-          city: extractAddressComponent(components, 'locality'),
-          postalCode: extractAddressComponent(components, 'postal_code'),
-          country: extractAddressComponent(components, 'country'),
-        }));
-      } else {
-        console.error('PlacesService getDetails failed:', status);
-        toast.warn("Could not auto-fill address details. Please fill fields manually.");
-      }
-    });
-  }
 
-  // Handles the final checkout submission to our backend.
-const handleCheckout = async () => {
-  // --- LÓGICA CORREGIDA ---
-  
-  // 1. Primero, validamos el número de teléfono por separado
-  if (address.phoneNumber && !isValidPhoneNumber(address.phoneNumber)) {
-    toast.error("Please enter a valid phone number.");
-    return;
-  }
+  // --- REFACTORED: Handles address selection from OpenStreetMapAutocomplete ---
+  const handleAddressSelect = (details) => {
+    if (!details) return;
 
-  // 2. Creamos una copia del objeto de dirección para la validación
-  const fieldsToValidate = { ...address };
-  // Eliminamos el campo opcional para que no sea requerido
-  delete fieldsToValidate.apartmentSuite; 
+    // Combine name (e.g., house number or POI) and street for a full street address.
+    const streetAddress = [details.name, details.street].filter(Boolean).join(' ');
 
-  for (const key in fieldsToValidate) {
-    if (!fieldsToValidate[key]) {
-      const fieldName = key.replace(/([A-Z])/g, ' $1').toLowerCase();
-      toast.error(`Please fill in the '${fieldName}' field.`);
+    setAddress(prev => ({
+      ...prev,
+      streetAddress: streetAddress,
+      city: details.city || '',
+      postalCode: details.postcode || '',
+      country: details.country || '',
+    }));
+  };
+
+  const handleCheckout = async () => {
+    // 1. Validate phone number first.
+    if (address.phoneNumber && !isValidPhoneNumber(address.phoneNumber)) {
+      toast.error("Please enter a valid phone number.");
       return;
     }
-  }
+
+    // 2. Validate all required fields (everything except apartmentSuite).
+    const fieldsToValidate = { ...address };
+    delete fieldsToValidate.apartmentSuite; 
+
+    for (const key in fieldsToValidate) {
+      if (!fieldsToValidate[key]) {
+        const fieldName = key.replace(/([A-Z])/g, ' $1').toLowerCase();
+        toast.error(`Please fill in the '${fieldName}' field.`);
+        return;
+      }
+    }
 
     setLoading(true);
     try {
@@ -131,6 +116,10 @@ const handleCheckout = async () => {
   };
 
   // --- RENDER LOGIC ---
+  const totalPrice = useMemo(() => 
+    cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
+  , [cartItems]);
+
   if (cartItems.length === 0) {
     return (
       <main className="container" style={{textAlign: 'center'}}>
@@ -140,10 +129,6 @@ const handleCheckout = async () => {
       </main>
     );
   }
-  const totalPrice = useMemo(() => {
-  console.log("Calculating total price...");
-  return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  }, [cartItems]);
 
   return (
     <main className="container">
@@ -152,18 +137,19 @@ const handleCheckout = async () => {
         <div className={styles.orderDetails}>
           <h3>Shipping Information</h3>
           <div className={styles.addressForm}>
-              <FormField
+            <FormField
               label="Full Name"
               id="fullName"
               name="fullName"
               value={address.fullName}
               onChange={handleInputChange}
               required
-              />
-          <div className={styles.formGroup}>
-            <label htmlFor="streetAddress">Street Address</label>
-            <GooglePlacesAutocomplete onSelect={handleAddressSelect} />
-          </div>
+            />
+            {/* --- UPDATED: Using the new OpenStreetMap component --- */}
+            <div className={styles.formGroup}>
+              <label htmlFor="streetAddress">Street Address</label>
+              <OpenStreetMapAutocomplete onSelect={handleAddressSelect} />
+            </div>
             <div className={styles.formRow}>
               <FormField
                 label="City"
@@ -173,7 +159,7 @@ const handleCheckout = async () => {
                 onChange={handleInputChange}
                 required
               />
-                <FormField
+              <FormField
                 label="Postal Code"
                 id="postalCode"
                 name="postalCode"
@@ -194,13 +180,13 @@ const handleCheckout = async () => {
               <label htmlFor="phoneNumber">Phone Number</label>
               <PhoneInput
                 id="phoneNumber"
-                country={countryCode}
+                country={countryCode} // Automatically sets the country flag
                 value={address.phoneNumber}
                 onChange={handlePhoneChange}
                 className={styles.phoneInput}
                 required
               />
-            </div>            
+            </div>
           </div>
           <hr />
           <h3>Order Items</h3>
@@ -212,14 +198,14 @@ const handleCheckout = async () => {
           ))}
         </div>
         <div className={styles.orderSummary}>
-            <h3>Order Summary</h3>
-            <div className={styles.summaryLine}>
-              <span>Total</span>
-              <span>${totalPrice.toFixed(2)}</span>
-            </div>
-            <button onClick={handleCheckout} disabled={loading} className={styles.payButton}>
-              {loading ? 'Processing...' : 'Proceed to Payment'}
-            </button>
+          <h3>Order Summary</h3>
+          <div className={styles.summaryLine}>
+            <span>Total</span>
+            <span>${totalPrice.toFixed(2)}</span>
+          </div>
+          <button onClick={handleCheckout} disabled={loading} className={styles.payButton}>
+            {loading ? 'Processing...' : 'Proceed to Payment'}
+          </button>
         </div>
       </div>
     </main>
