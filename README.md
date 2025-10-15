@@ -1,99 +1,75 @@
-# E-commerce Project: Frontend, Backend, and Cloud Deployment
+# Full-Stack E-commerce Project with Cloud Deployment
 
-## Project Overview
+## 1. Project Overview
 
-This is a full-stack e-commerce application with a React frontend, a Flask (Python) backend, and is configured for automated deployment on Google Cloud Platform.
+This is a complete and functional e-commerce application featuring a modern React frontend and a robust Flask backend. The project is designed for scalability and is deployed on Google Cloud Platform, utilizing services like Google Cloud Run for the backend, Firebase Hosting for the frontend, and Google Cloud SQL for the database.
 
-### Core Technologies
+The application offers a complete shopping experience, from a product catalog and shopping cart to a secure checkout process integrated with Stripe.
 
-*   **Frontend**: React (built with Vite), JavaScript (ES6+), CSS Modules.
-*   **Backend**: Python 3.11, Flask, SQLAlchemy (for database interaction).
-*   **Database**: Google Cloud SQL (PostgreSQL).
-*   **Deployment**: Google Cloud Build & Google Cloud Run, triggered by `git push` to the `main` branch.
-*   **CI/CD**: The project is configured with a Cloud Build trigger that automatically builds and deploys the backend service when changes are pushed to the GitHub repository.
+## 2. System Architecture
 
-## Current Project Status
+The project follows a microservices architecture, with a clear separation between the frontend and backend, allowing for independent development and deployment.
 
-The project is **almost fully functional** but is currently blocked by a **critical deployment issue** in the backend.
+### 2.1. Frontend (React)
 
-### Frontend (`/frontend`)
+*   **Framework**: Built with **React** and **Vite**, ensuring fast performance and a modern development experience.
+*   **Hosting**: Deployed on **Firebase Hosting**, providing a fast and secure Content Delivery Network (CDN) worldwide.
+*   **Structure**:
+    *   `src/components`: Reusable UI components (Navbar, Footer, ProductCard, etc.).
+    *   `src/pages`: Components representing the different pages of the application (HomePage, CartPage, CheckoutPage, etc.).
+    *   `src/context`: Global state management for the shopping cart (`CartContext`) and user authentication (`AuthContext`).
+    *   `src/api`: A configured Axios instance (`axiosInstance`) for making secure calls to the backend API.
+*   **Key Features**:
+    *   **Protected Routing**: Separate routes for public users, authenticated users, and administrators, ensuring security and proper authorization.
+    *   **Reusable Components**: The code is modular and easy to maintain thanks to a component-based structure.
+    *   **Integration with External APIs**: Uses **OpenStreetMap** for address autocomplete and **Stripe** for payment processing.
 
-*   **Structure**: The frontend is a standard React application created with Vite. Key directories include `src/components`, `src/pages`, and `src/services`.
-*   **Functionality**: Implements user registration, login, product catalog, shopping cart, and a checkout flow using Stripe and the Google Places API.
-*   **Component-Based**: The code is well-structured with reusable components. For example, `frontend/src/components/forms/FormFields.jsx` provides a generic input field.
-*   **API Keys**: The frontend correctly uses environment variables for sensitive keys (e.g., Google Places API). See `frontend/src/components/forms/GooglePlacesAutocomplete.jsx` for an example.
-*   **State**: The frontend is considered stable and complete, pending the backend becoming fully operational.
+### 2.2. Backend (Flask)
 
-### Backend (`/backend`)
+*   **Framework**: Developed in **Python** with **Flask**, a lightweight and powerful micro-framework.
+*   **Hosting**: Containerized with **Docker** and deployed on **Google Cloud Run**, enabling automatic scaling and high availability.
+*   **Structure**:
+    *   `app.py`: The main application file containing Flask configuration, API routes, and business logic.
+    *   `models.py`: Defines the database models using **SQLAlchemy**, which facilitates interaction with the database.
+    *   `requirements.txt`: A list of all necessary Python dependencies for the project.
+    *   `Procfile` and `Dockerfile`: Configuration files for cloud deployment.
+*   **Key Features**:
+    *   **RESTful API**: Provides endpoints for managing products, users, orders, and authentication.
+    *   **Authentication and Authorization**: Implements a secure login system with sessions and decorators to protect specific routes.
+    *   **Database Migrations**: Uses **Flask-Migrate** to manage changes to the database schema safely and controllably.
 
-*   **Structure**: A Flask application with a main `app.py`, a `models.py` for SQLAlchemy database models, and a `requirements.txt` for dependencies.
-*   **Functionality**: Provides API endpoints for products, user authentication, order management, and Stripe integration. It is designed to connect to a Google Cloud SQL (PostgreSQL) instance.
-*   **Dockerfile**: A `backend/Dockerfile` is included, which correctly containerizes the application for deployment. It copies the `requirements.txt` file, installs dependencies, and runs the application using `gunicorn`.
-*   **Database Connection**: The code in `app.py` has been updated to correctly read the database connection string from an environment variable (`DATABASE_URL`). This part is believed to be correct.
+### 2.3. Database
 
----
+*   **Service**: **Google Cloud SQL** with a **PostgreSQL** engine.
+*   **ORM**: **SQLAlchemy** is used in the backend to map Python objects to database tables, simplifying queries and operations.
+*   **Schema**: Includes tables for products, users, orders, and addresses, with well-defined relationships to ensure data integrity.
 
-## !! CRITICAL DEPLOYMENT ISSUE !!
+## 3. Current Status and Next Steps
 
-**The backend service is currently FAILING TO DEPLOY.**
+The application is fully functional, but a key opportunity has been identified to improve scalability and user experience.
 
-### The Problem
+**Current Status:**
+The current system creates a new address entry for each order, which leads to data duplication and requires users to enter their address with every purchase.
 
-Every time a `git push` is made, the Google Cloud Build process fails. The logs consistently show the following error:
+**Next Steps (Refactoring in Progress):**
+A refactoring is underway to implement an **address book** feature for users.
 
-```
-ModuleNotFoundError: No module named 'dotenv'
-```
+1.  **Backend**:
+    *   **Modify the `Address` model** to link it directly to the `User`, creating a one-to-many relationship.
+    *   **Create new API endpoints** for users to manage (create, view, update, delete) their saved addresses.
+    *   **Update the checkout logic** to allow users to select a saved address or add a new one.
+2.  **Frontend**:
+    *   **Add a section in "My Account"** for users to manage their address book.
+    *   **Update the checkout page** to allow the selection of saved addresses, thereby improving the shopping experience.
 
-This error indicates that the `python-dotenv` package is not being installed during the build process.
+## 4. Technologies Used
 
-### The Cause
+*   **Frontend**: React, Vite, JavaScript, CSS Modules, Axios
+*   **Backend**: Python, Flask, SQLAlchemy, Gunicorn
+*   **Database**: PostgreSQL
+*   **Deployment**: Docker, Google Cloud Run, Firebase Hosting
+*   **External APIs**: Stripe, OpenStreetMap
 
-The root cause is that the `backend/requirements.txt` file in the GitHub repository is **incorrect or outdated**. Although we have attempted to add `python-dotenv==1.0.1` and other missing dependencies (like `pg8000`) to this file locally, these changes are **not being correctly reflected in the repository after pushing**.
+## 5. Local Setup and Development
 
-The Cloud Build process clones the repository directly from GitHub. If `backend/requirements.txt` is missing dependencies there, the build will fail, regardless of what the file looks like on a local machine.
-
-We have been stuck in a loop where:
-1.  We fix `backend/requirements.txt` locally.
-2.  We `git push` the changes.
-3.  The version of the file in the repository remains outdated.
-4.  The build fails.
-
-### **IMMEDIATE NEXT STEPS FOR THE NEW DEVELOPER**
-
-Your first and most important task is to resolve this deployment blocker.
-
-1.  **Verify `backend/requirements.txt` on GitHub**: Go to the project repository on GitHub.com and navigate to `backend/requirements.txt`. Check if `python-dotenv==1.0.1` and `pg8000==1.31.2` are present. They most likely are not.
-
-2.  **Force an Update to the File**: You must ensure the correct version of this file gets into the repository. A robust way to do this is:
-    a. Delete the file from your local repository: `git rm backend/requirements.txt`
-    b. Commit the deletion: `git commit -m "Docs: Removing corrupt requirements file"`
-    c. Re-create the `backend/requirements.txt` file locally with the correct content (provided below).
-    d. Add, commit, and push the new file: `git add backend/requirements.txt`, `git commit -m "Fix: Recreating requirements file with all dependencies"`, and `git push`.
-
-3.  **Correct `requirements.txt` Content**: The file should contain *at least* the following dependencies:
-    ```
-    Flask==3.0.3
-    Flask-SQLAlchemy==3.1.1
-    Flask-Migrate==4.0.7
-    Flask-Bcrypt==1.0.1
-    Flask-Cors==4.0.1
-    Flask-Session==0.6.0
-    gunicorn==23.0.0
-    psycopg2-binary
-    pg8000==1.31.2
-    python-dotenv==1.0.1
-    SQLAlchemy==2.0.31
-    stripe==10.2.0
-    Werkzeug==3.0.3
-    greenlet==3.0.3
-    itsdangerous==2.2.0
-    Jinja2==3.1.4
-    MarkupSafe==2.1.5
-    blinker==1.8.2
-    click==8.1.7
-    ```
-
-4.  **Monitor the Build**: After you successfully `git push` the corrected file, go to the Google Cloud Console, find the Cloud Build history, and monitor the new build. It should now pass the dependency installation step. Once the build succeeds, Cloud Run will deploy the new revision, and the API should become available.
-
-Once the backend is successfully deployed, the project should be fully operational.
+(This section will be completed after the refactoring is finished to ensure the instructions are accurate).
