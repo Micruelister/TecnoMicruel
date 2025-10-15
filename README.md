@@ -70,6 +70,12 @@ A refactoring is underway to implement an **address book** feature for users.
 *   **Deployment**: Docker, Google Cloud Run, Firebase Hosting
 *   **External APIs**: Stripe, OpenStreetMap
 
-## 5. Local Setup and Development
+## 5. Development Environment and Deployment
+
+This project uses a declarative development environment defined in the `.idx/dev.nix` file. This ensures that all developers (and automated tools) use the same set of packages and configurations.
+
+The backend deployment is automated through a CI/CD pipeline connected to the project's GitHub repository. **Any `git push` to the `main` branch will trigger a new build and deployment of the backend service on Google Cloud Run.**
+
+## 6. Local Setup and Development
 
 (This section will be completed after the refactoring is finished to ensure the instructions are accurate).
