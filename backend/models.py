@@ -27,6 +27,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     phone_number = db.Column(db.String(50), nullable=True)
+    addresses = db.relationship('Address', backref='user', lazy=True, cascade="all, delete-orphan")
 
 class Order(db.Model):
     __tablename__ = 'orders'
@@ -49,6 +50,7 @@ class Address(db.Model):
     postal_code = db.Column(db.String(20), nullable=False)
     country = db.Column(db.String(100), nullable=False)
     phone_number = db.Column(db.String(50), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 class OrderProduct(db.Model):
     __tablename__ = 'order_products'
