@@ -1,8 +1,8 @@
 # =================================================================
-# FILE: app.py (Refactored to use models.py and admin decorator)
+# FILE: app.py (Refactored with Pythonic Style & Address Book)
 # =================================================================
 import os
-import re # Import re for regular expressions
+import re
 import uuid
 from functools import wraps
 
@@ -17,7 +17,7 @@ from flask_session import Session
 from flask_migrate import Migrate
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# --- Import db object and models from our new models file ---
+# --- Import db object and models ---
 from models import db, Product, ProductImage, User, Order, Address, OrderProduct
 
 # --- App Initialization ---
@@ -25,58 +25,42 @@ app = Flask(__name__, static_folder='../static')
 load_dotenv()
 
 # --- Configuration ---
+# Standard Flask and extension configs
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-app.config['SESSION_COOKIE_SECURE'] = True
-# Fallback mechanism for database URI to ensure connectivity
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL') or os.getenv('SQLALCHEMY_DATABASE_URI')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'frontend/public/uploads/products')
+app.config.update(
+    SECRET_KEY=os.getenv('SECRET_KEY'),
+    SESSION_TYPE='filesystem',
+    SESSION_PERMANENT=False,
+    SESSION_USE_SIGNER=True,
+    SESSION_COOKIE_SAMESITE='None',
+    SESSION_COOKIE_SECURE=True,
+    SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL') or os.getenv('SQLALCHEMY_DATABASE_URI'),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    UPLOAD_FOLDER=os.path.join(app.root_path, '..', 'frontend/public/uploads/products')
+)
 stripe.api_key = os.getenv('STRIPE_API_KEY')
 
 # --- CORS Configuration ---
-# Get the frontend URL from environment variables
+# Build the list of allowed origins for CORS
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-
-# Get the Gitpod workspace URL, if it exists
-GITPOD_WORKSPACE_URL = os.getenv('GITPOD_WORKSPACE_URL', '')
-
-# Get the Cloud Workstations URL, if it exists
-CLOUD_WORKSTATIONS_URL = os.getenv('WEB_HOST', '')
-
-# List of allowed origins
 origins = [FRONTEND_URL]
-
-# If in a Gitpod environment, allow its URLs
-if GITPOD_WORKSPACE_URL:
-    # Regex to build the frontend URL from the Gitpod backend URL
-    gitpod_frontend_url = re.sub(r'https://5000-', 'https://5173-', GITPOD_WORKSPACE_URL)
-    origins.append(gitpod_frontend_url)
-
-# If in a Cloud Workstations environment, allow its URLs
-if CLOUD_WORKSTATIONS_URL:
-    # The WEB_HOST variable already includes the protocol and port
-    # We need to replace the port to get the frontend URL
-    # Assuming frontend runs on 5173
+if GITPOD_WORKSPACE_URL := os.getenv('GITPOD_WORKSPACE_URL'):
+    origins.append(re.sub(r'https://5000-', 'https://5173-', GITPOD_WORKSPACE_URL))
+if CLOUD_WORKSTATIONS_URL := os.getenv('WEB_HOST'):
     origins.append(re.sub(r':\d+', ':5173', CLOUD_WORKSTATIONS_URL))
 
 # --- Extensions Initialization ---
 Session(app)
-# Apply CORS with the dynamic list of origins
 CORS(app, origins=origins, supports_credentials=True)
 bcrypt = Bcrypt(app)
-db.init_app(app)  # Initialize the db with the app
+db.init_app(app)
 migrate = Migrate(app, db)
-
 
 # =================================================================
 # DECORATORS
 # =================================================================
 def api_login_required(f):
+    """Decorator to ensure a user is logged in for an API endpoint."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
@@ -85,6 +69,7 @@ def api_login_required(f):
     return decorated_function
 
 def api_admin_required(f):
+    """Decorator to ensure a user has admin privileges."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
@@ -94,99 +79,151 @@ def api_admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# =================================================================
+# HELPER FUNCTIONS
+# =================================================================
+def address_to_dict(address: Address) -> dict:
+    """Converts an Address SQLAlchemy object to a dictionary."""
+    if not address:
+        return {}
+    return {
+        "id": address.id,
+        "fullName": address.full_name,
+        "streetAddress": address.street_address,
+        "apartmentSuite": address.apartment_suite,
+        "city": address.city,
+        "postalCode": address.postal_code,
+        "country": address.country,
+        "phoneNumber": address.phone_number
+    }
 
 # =================================================================
 # API ROUTES
 # =================================================================
 
-# --- Product API ---
-@app.route('/api/products', methods=['GET'])
-def get_products():
-    try:
-        # --- SERVER-SIDE SEARCH & FILTER ---
-        search_term = request.args.get('search', '')
-        brand_filter = request.args.get('brand', 'All')
+# --- Product & Brand API ---
+@app.route('/api/products', methods=['GET', 'POST'])
+def handle_products():
+    """Handles GET for all products and POST for creating a new product."""
+    if request.method == 'GET':
+        try:
+            query = Product.query
+            if search_term := request.args.get('search'):
+                query = query.filter(Product.name.ilike(f"%{search_term}%"))
+            if (brand_filter := request.args.get('brand')) and brand_filter != 'All':
+                query = query.filter_by(brand=brand_filter)
 
-        query = Product.query
+            products = query.order_by(Product.name).all()
+            base_url = request.host_url.replace("http://", "https://")
 
-        if search_term:
-            # Using ilike for case-insensitive search
-            query = query.filter(Product.name.ilike(f"%{search_term}%"))
+            products_list = [
+                {
+                    'id': p.id, 'name': p.name, 'price': p.price, 'stock': p.stock,
+                    'description': p.description, 'brand': p.brand,
+                    'imageUrls': [f"{base_url}static/uploads/products/{image.filename}" for image in p.images],
+                    'thumbnailUrl': f"{base_url}static/uploads/products/{p.images[0].filename}" if p.images else f'{base_url}placeholder.svg'
+                } for p in products
+            ]
+            return jsonify(products_list)
+        except Exception as e:
+            print(f"--- ERROR in GET /api/products: {e} ---")
+            return jsonify({"error": "An error occurred fetching products"}), 500
 
-        if brand_filter and brand_filter != 'All':
-            query = query.filter_by(brand=brand_filter)
+    if request.method == 'POST':
+        if 'user_id' not in session or not session.get('is_admin'):
+             return jsonify({"message": "Admin access required"}), 403
+        if 'name' not in request.form or 'price' not in request.form or 'stock' not in request.form:
+            return jsonify({"message": "Name, price, and stock are required."}), 400
+        
+        new_product = Product(
+            name=request.form['name'], price=float(request.form['price']), stock=int(request.form['stock']),
+            description=request.form.get('description', ''), brand=request.form.get('brand', '')
+        )
+        db.session.add(new_product)
+        db.session.flush()
 
-        products = query.order_by(Product.name).all()
-        # --- END OF SERVER-SIDE LOGIC ---
-
-        base_url = request.host_url.replace("http://", "https://")
-        products_list = []
-        for product in products:
-            # Use placeholder.svg if no images exist
-            image_urls = [f"{base_url}static/uploads/products/{image.filename}" for image in product.images]
-            thumbnail = image_urls[0] if image_urls else f'{base_url}placeholder.svg'
-            
-            product_data = {
-                'id': product.id,
-                'name': product.name,
-                'price': product.price,
-                'stock': product.stock,
-                'description': product.description,
-                'brand': product.brand,
-                'imageUrls': image_urls,
-                'thumbnailUrl': thumbnail
-            }
-            products_list.append(product_data)
-        return jsonify(products_list)
-    except Exception as e:
-        print(f"--- ERROR in /api/products: {e} ---")
-        return jsonify({"error": "An error occurred while fetching products"}), 500
+        for file in request.files.getlist('images'):
+            if file and file.filename != '':
+                unique_filename = f"{uuid.uuid4()}{os.path.splitext(file.filename)[1].lower()}"
+                filename = secure_filename(unique_filename)
+                upload_path = app.config['UPLOAD_FOLDER']
+                os.makedirs(upload_path, exist_ok=True)
+                file.save(os.path.join(upload_path, filename))
+                db.session.add(ProductImage(filename=filename, product_id=new_product.id))
+        
+        db.session.commit()
+        return jsonify({"message": "Product created successfully!", "productId": new_product.id}), 201
 
 @app.route('/api/brands', methods=['GET'])
 def get_brands():
+    """Returns a unique list of all product brands."""
     try:
-        # Query distinct brand names, filter out any null/empty brands
-        brands = db.session.query(Product.brand).filter(Product.brand.isnot(None)).distinct().all()
-        # The query returns a list of tuples, so we flatten it
-        brand_list = [brand[0] for brand in brands]
-        return jsonify(brand_list)
+        brands = [brand[0] for brand in db.session.query(Product.brand).filter(Product.brand.isnot(None)).distinct().all()]
+        return jsonify(brands)
     except Exception as e:
         print(f"--- ERROR in /api/brands: {e} ---")
         return jsonify({"error": "An error occurred fetching brands"}), 500
 
-
-@app.route('/api/products/<int:product_id>', methods=['GET'])
-def get_product(product_id):
-    base_url = request.host_url.replace("http://", "https://")
+@app.route('/api/products/<int:product_id>', methods=['GET', 'PUT', 'DELETE'])
+def handle_specific_product(product_id):
+    """Handles GET, PUT, and DELETE for a single product."""
     product = Product.query.get_or_404(product_id)
     
-    image_urls = [f"{base_url}static/uploads/products/{image.filename}" for image in product.images]
-    thumbnail = image_urls[0] if image_urls else f'{base_url}placeholder.svg'
+    if request.method == 'GET':
+        base_url = request.host_url.replace("http://", "https://")
+        return jsonify({
+            'id': product.id, 'name': product.name, 'price': product.price, 'stock': product.stock,
+            'description': product.description, 'brand': product.brand,
+            'imageUrls': [f"{base_url}static/uploads/products/{image.filename}" for image in product.images],
+            'thumbnailUrl': f"{base_url}static/uploads/products/{product.images[0].filename}" if product.images else f'{base_url}placeholder.svg'
+        })
 
-    product_data = {
-        'id': product.id,
-        'name': product.name,
-        'price': product.price,
-        'stock': product.stock,
-        'description': product.description,
-        'brand': product.brand,
-        'imageUrls': image_urls,
-        'thumbnailUrl': thumbnail
-    }
-    return jsonify(product_data)
+    # Admin check for PUT and DELETE
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({"message": "Admin access required"}), 403
 
+    if request.method == 'PUT':
+        product.name = request.form.get('name', product.name)
+        product.price = float(request.form.get('price', product.price))
+        product.stock = int(request.form.get('stock', product.stock))
+        product.description = request.form.get('description', product.description)
+        product.brand = request.form.get('brand', product.brand)
+
+        for file in request.files.getlist('images'):
+            if file and file.filename != '':
+                unique_filename = f"{uuid.uuid4()}{os.path.splitext(file.filename)[1].lower()}"
+                filename = secure_filename(unique_filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                db.session.add(ProductImage(filename=filename, product_id=product.id))
+        
+        db.session.commit()
+        return jsonify({"message": f"Product '{product.name}' updated successfully"}), 200
+
+    if request.method == 'DELETE':
+        for image in product.images:
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], image.filename))
+            except OSError as e:
+                print(f"Error deleting image file: {e}")
+        db.session.delete(product)
+        db.session.commit()
+        return jsonify({"message": f"Product '{product.name}' deleted successfully"}), 200
 
 # --- Auth API ---
 @app.route('/api/register', methods=['POST'])
 def api_register():
     data = request.get_json()
-    if not data or not data.get('username') or not data.get('email') or not data.get('password'):
+    if not all(data.get(k) for k in ['username', 'email', 'password']):
         return jsonify({"message": "Username, email, and password are required"}), 400
-    username, email, password = data.get('username'), data.get('email'), data.get('password')
-    if User.query.filter(or_(User.username == username, User.email == email)).first():
+    
+    if User.query.filter(or_(User.username == data['username'], User.email == data['email'])).first():
         return jsonify({"message": "Username or email already exists"}), 409
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(username=username, email=email, password_hash=hashed_password)
+        
+    new_user = User(
+        username=data['username'],
+        email=data['email'],
+        password_hash=bcrypt.generate_password_hash(data['password']).decode('utf-8')
+    )
     db.session.add(new_user)
     db.session.commit()
     return jsonify({"message": "User created successfully!"}), 201
@@ -194,52 +231,52 @@ def api_register():
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.get_json()
-    if not data or not data.get('email') or not data.get('password'):
-        return jsonify({"message": "Email and password are required"}), 400
-    login_identity, password = data.get('email'), data.get('password')
-    user = User.query.filter(or_(User.username == login_identity, User.email == login_identity)).first()
-    if user and bcrypt.check_password_hash(user.password_hash, password):
-        session['user_id'] = user.id
-        session['is_admin'] = user.is_admin
+    if not all(data.get(k) for k in ['email', 'password']): # 'email' field used for both username/email
+        return jsonify({"message": "Email/Username and password are required"}), 400
+
+    user = User.query.filter(or_(User.username == data['email'], User.email == data['email'])).first()
+    if user and bcrypt.check_password_hash(user.password_hash, data['password']):
+        session.update(user_id=user.id, is_admin=user.is_admin)
         session.modified = True
-        return jsonify({"message": "Login successful!", "user": {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "is_admin": user.is_admin,
-            "phoneNumber": user.phone_number }}), 200
-    else:
-        return jsonify({"message": "Invalid credentials"}), 401
+        return jsonify({
+            "message": "Login successful!",
+            "user": {"id": user.id, "username": user.username, "email": user.email, "is_admin": user.is_admin, "phoneNumber": user.phone_number}
+        }), 200
+    
+    return jsonify({"message": "Invalid credentials"}), 401
 
 @app.route('/api/logout', methods=['POST'])
 def api_logout():
     session.clear()
     return jsonify({"message": "Logout successful"}), 200
 
-# --- Checkout API ---
+# --- Checkout & Order API ---
 @app.route('/api/create-checkout-session', methods=['POST'])
 @api_login_required
 def create_checkout_session():
     data = request.get_json()
-    cart_items = data.get('cartItems')
-    shipping_address = data.get('shippingAddress')
-    if not cart_items or not shipping_address:
-        return jsonify({"message": "Cart items or shipping address is missing"}), 400
-    session['shipping_address'] = shipping_address
-    
-    # Use the environment variable for the frontend domain
-    YOUR_FRONTEND_DOMAIN = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+    if not (cart_items := data.get('cartItems')) or not (shipping_address := data.get('shippingAddress')):
+        return jsonify({"message": "Cart items and shipping address are required"}), 400
 
-    line_items = []
-    for item in cart_items:
-        line_items.append({'price_data': {'currency': 'usd', 'product_data': {'name': item['name']}, 'unit_amount': int(item['price'] * 100)}, 'quantity': item['quantity']})
+    session['shipping_address'] = shipping_address
+    YOUR_FRONTEND_DOMAIN = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+    
+    line_items = [
+        {
+            'price_data': {
+                'currency': 'usd',
+                'product_data': {'name': item['name']},
+                'unit_amount': int(item['price'] * 100)
+            },
+            'quantity': item['quantity']
+        } for item in cart_items
+    ]
+    
     try:
         checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=line_items,
-            mode='payment',
-            success_url=YOUR_FRONTEND_DOMAIN + '/order/success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=YOUR_FRONTEND_DOMAIN + '/order/cancel')
+            payment_method_types=['card'], line_items=line_items, mode='payment',
+            success_url=f"{YOUR_FRONTEND_DOMAIN}/order/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{YOUR_FRONTEND_DOMAIN}/order/cancel")
         return jsonify({'url': checkout_session.url})
     except Exception as e:
         return jsonify(error=str(e)), 500
@@ -248,252 +285,176 @@ def create_checkout_session():
 @api_login_required
 def verify_order():
     data = request.get_json()
-    session_id = data.get('sessionId')
     user_id = session.get('user_id')
-    shipping_address_data = session.get('shipping_address')
-    if not all([session_id, user_id, shipping_address_data]):
-        return jsonify({"message": "Critical information is missing to verify the order"}), 400
+    if not (session_id := data.get('sessionId')) or not (shipping_address_data := session.get('shipping_address')):
+        return jsonify({"message": "Session ID or shipping data is missing"}), 400
+
     try:
         checkout_session = stripe.checkout.Session.retrieve(session_id, expand=["line_items.data.price.product"])
-        if checkout_session.payment_status == "paid":
-            new_address = Address(
-                full_name=shipping_address_data.get('fullName'),
-                street_address=shipping_address_data.get('streetAddress'),
-                apartment_suite=shipping_address_data.get('apartmentSuite'),
-                city=shipping_address_data.get('city'),
-                postal_code=shipping_address_data.get('postalCode'),
-                country=shipping_address_data.get('country'),
-                phone_number=shipping_address_data.get('phoneNumber')
-            )
-            db.session.add(new_address)
-            db.session.flush()
-            new_order = Order(user_id=user_id, total=checkout_session.amount_total / 100.0, address_id=new_address.id)
-            db.session.add(new_order)
-            
-            user = User.query.get(user_id)
-            if user and not user.phone_number:
-                user.phone_number = shipping_address_data.get('phoneNumber')            
-                
-            for item in checkout_session.line_items.data:
-                product = Product.query.filter_by(name=item.price.product.name).first()
-                if product:
-                    order_product = OrderProduct(order=new_order, product_id=product.id, quantity=item.quantity, unit_price=item.price.unit_amount / 100.0)
-                    db.session.add(order_product)
-                    product.stock -= item.quantity
-            db.session.commit()
-            session.pop('shipping_address', None)
-            return jsonify({"message": "Purchase verified and order saved successfully"}), 200
-        else:
-            return jsonify({"message": "Payment not successful according to Stripe"}), 402
+        if checkout_session.payment_status != "paid":
+            return jsonify({"message": "Payment not successful"}), 402
+
+        # Find or create the address, linking it to the user
+        address = Address.query.filter_by(
+            user_id=user_id,
+            street_address=shipping_address_data.get('streetAddress'),
+            city=shipping_address_data.get('city'),
+            postal_code=shipping_address_data.get('postalCode'),
+            country=shipping_address_data.get('country')
+        ).first()
+
+        if not address:
+            address = Address(user_id=user_id, **shipping_address_data)
+            db.session.add(address)
+            db.session.flush() # Use flush to get address.id before commit
+
+        # Create the order and link it to the address
+        new_order = Order(user_id=user_id, total=checkout_session.amount_total / 100.0, address_id=address.id)
+        db.session.add(new_order)
+        
+        # Update stock and create order-product links
+        for item in checkout_session.line_items.data:
+            product = Product.query.filter_by(name=item.price.product.name).first()
+            if product:
+                db.session.add(OrderProduct(order=new_order, product_id=product.id, quantity=item.quantity, unit_price=item.price.unit_amount / 100.0))
+                product.stock -= item.quantity
+        
+        # Update user's phone number if not already set
+        user = User.query.get(user_id)
+        if user and not user.phone_number:
+            user.phone_number = shipping_address_data.get('phoneNumber')
+
+        db.session.commit()
+        session.pop('shipping_address', None)
+        return jsonify({"message": "Purchase verified and order saved"}), 200
+
     except Exception as e:
         db.session.rollback()
+        print(f"--- ERROR in /api/order/verify: {e} ---")
         return jsonify(error=str(e)), 500
 
-# --- User Account API ---
+# --- User Account & Address Book API ---
 @app.route('/api/my-orders', methods=['GET'])
 @api_login_required
 def get_my_orders():
-    user_id = session.get('user_id')
-    user_orders = Order.query.filter_by(user_id = user_id).order_by(Order.date.desc()).all()
-    orders_list = []
-    for order in user_orders:
-        address = order.address
-        shipping_info = {
-            'fullName': address.full_name,
-            'streetAddress': address.street_address,
-            'apartmentSuite': address.apartment_suite,
-            'city': address.city,
-            'postalCode': address.postal_code,
-            'country': address.country,
-            'phoneNumber': address.phone_number
-        }
-        order_data = {
+    orders = Order.query.filter_by(user_id=session['user_id']).order_by(Order.date.desc()).all()
+    orders_list = [
+        {
             'id': order.id,
             'date': order.date.strftime('%Y-%m-%d %H:%M'),
             'total': order.total,
-            'shippingInfo': shipping_info,
-            'products': [{'name': item.product.name, 'quantity': item.quantity, 'unit_price': item.unit_price} for item in order.products]
-        }
-        orders_list.append(order_data)
-    return jsonify(orders_list), 200
+            'shippingInfo': address_to_dict(order.address),
+            'products': [
+                {'name': item.product.name, 'quantity': item.quantity, 'unit_price': item.unit_price}
+                for item in order.products
+            ]
+        } for order in orders
+    ]
+    return jsonify(orders_list)
 
-@app.route('/api/user/profile', methods=['GET'])
+@app.route('/api/user/profile', methods=['GET', 'PUT'])
 @api_login_required
-def get_user_profile():
-    user_id = session.get('user_id')
-    user = User.query.get_or_404(user_id)
-    profile_data = {
-        "username": user.username,
-        "email": user.email,
-        "phoneNumber": user.phone_number,
-    }
-    return jsonify(profile_data), 200
+def handle_user_profile():
+    user = User.query.get_or_404(session['user_id'])
+    
+    if request.method == 'GET':
+        return jsonify({"username": user.username, "email": user.email, "phoneNumber": user.phone_number})
 
-@app.route('/api/user/profile', methods=['PUT'])
-@api_login_required
-def update_user_profile():
-    user_id = session.get('user_id')
-    user_to_update = User.query.get_or_404(user_id)
-    
-    data = request.get_json()
-    new_username = data.get('username')
-    new_email = data.get('email')
-    new_phone_number = data.get('phoneNumber')
-
-    if new_username != user_to_update.username and User.query.filter_by(username=new_username).first():
-        return jsonify({"message": "Username already taken"}), 409
-    if new_email != user_to_update.email and User.query.filter_by(email=new_email).first():
-        return jsonify({"message": "Email already registered"}), 409
-    
-    user_to_update.username = new_username
-    user_to_update.email = new_email
-    user_to_update.phone_number = new_phone_number
-    
-    db.session.commit()
-    
-    updated_user_data = {
-        "id": user_to_update.id,
-        "username": user_to_update.username,
-        "email": user_to_update.email,
-        "is_admin": user_to_update.is_admin,
-        "phoneNumber": user_to_update.phone_number
-    }
-    return jsonify({"message": "Profile updated successfully!", "user": updated_user_data}), 200
+    if request.method == 'PUT':
+        data = request.get_json()
+        if (new_username := data.get('username')) and new_username != user.username and User.query.filter_by(username=new_username).first():
+            return jsonify({"message": "Username already taken"}), 409
+        if (new_email := data.get('email')) and new_email != user.email and User.query.filter_by(email=new_email).first():
+            return jsonify({"message": "Email already registered"}), 409
+        
+        user.username = new_username or user.username
+        user.email = new_email or user.email
+        user.phone_number = data.get('phoneNumber', user.phone_number)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Profile updated successfully!",
+            "user": {"id": user.id, "username": user.username, "email": user.email, "is_admin": user.is_admin, "phoneNumber": user.phone_number}
+        })
 
 @app.route('/api/user/change-password', methods=['POST'])
 @api_login_required
 def change_password():
-    user_id = session.get('user_id')
-    user = User.query.get_or_404(user_id)
-    
+    user = User.query.get_or_404(session['user_id'])
     data = request.get_json()
-    current_password = data.get('currentPassword')
-    new_password = data.get('newPassword')
-    confirm_password = data.get('confirmPassword')
-
-    if not all([current_password, new_password, confirm_password]):
-        return jsonify({"message": "All fields are required"}), 400
-    if not bcrypt.check_password_hash(user.password_hash, current_password):
+    
+    if not all(data.get(k) for k in ['currentPassword', 'newPassword', 'confirmPassword']):
+        return jsonify({"message": "All password fields are required"}), 400
+    if not bcrypt.check_password_hash(user.password_hash, data['currentPassword']):
         return jsonify({"message": "Incorrect current password"}), 403
-    if bcrypt.check_password_hash(user.password_hash, new_password):
-        return jsonify({"message": "New password cannot be the same as the current password"}), 400
-    if new_password != confirm_password:
+    if data['newPassword'] != data['confirmPassword']:
         return jsonify({"message": "New passwords do not match"}), 400
 
-    user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    user.password_hash = bcrypt.generate_password_hash(data['newPassword']).decode('utf-8')
     db.session.commit()
-
     return jsonify({"message": "Password updated successfully!"}), 200
 
-# --- Admin Product Management API ---
-@app.route('/admin/product/new', methods=['POST'])
-@api_admin_required
-def create_product():
-    if 'name' not in request.form or 'price' not in request.form or 'stock' not in request.form:
-        return jsonify({"message": "Name, price, and stock are required fields."}), 400
-    new_product = Product(
-        name=request.form['name'],
-        price=float(request.form['price']),
-        stock=int(request.form['stock']),
-        description=request.form.get('description', ''),
-        brand=request.form.get('brand', '')
-    )
-    db.session.add(new_product)
-    db.session.flush()
-    
-    images = request.files.getlist('images')
-    
-    for file in images:
-        if file and file.filename != '':
-            extension = os.path.splitext(file.filename)[1].lower()
-            unique_filename = f"{uuid.uuid4()}{extension}"
-            filename = secure_filename(unique_filename)
-            upload_path = app.config['UPLOAD_FOLDER']
-            os.makedirs(upload_path, exist_ok=True)
-            save_path = os.path.join(upload_path, filename)
-            file.save(save_path)
-            new_image = ProductImage(filename=filename, product_id=new_product.id)
-            db.session.add(new_image)
-    db.session.commit()
-    return jsonify({"message": "Product created successfully!", "productId": new_product.id}), 201
+@app.route('/api/user/addresses', methods=['GET', 'POST'])
+@api_login_required
+def handle_addresses():
+    user_id = session['user_id']
+    if request.method == 'GET':
+        addresses = Address.query.filter_by(user_id=user_id).order_by(Address.id.desc()).all()
+        return jsonify([address_to_dict(addr) for addr in addresses])
 
-@app.route('/api/products/<int:product_id>', methods=['PUT'])
-@api_admin_required
-def update_product(product_id):
-    product_to_update = Product.query.get_or_404(product_id)
-    
-    product_to_update.name = request.form.get('name', product_to_update.name)
-    product_to_update.price = float(request.form.get('price', product_to_update.price))
-    product_to_update.stock = int(request.form.get('stock', product_to_update.stock))
-    product_to_update.description = request.form.get('description', product_to_update.description)
-    product_to_update.brand = request.form.get('brand', product_to_update.brand)
-    
-    images = request.files.getlist('images')
-    for file in images:
-        if file and file.filename != '':
-            extension = os.path.splitext(file.filename)[1].lower()
-            unique_filename = f"{uuid.uuid4()}{extension}"
-            filename = secure_filename(unique_filename)
-            save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(save_path)
-            new_image = ProductImage(filename=filename, product_id=product_to_update.id)
-            db.session.add(new_image)
+    if request.method == 'POST':
+        data = request.get_json()
+        if not data:
+            return jsonify({"message": "Request body cannot be empty"}), 400
+        
+        new_address = Address(user_id=user_id, **data)
+        db.session.add(new_address)
+        db.session.commit()
+        return jsonify({"message": "Address added successfully", "address": address_to_dict(new_address)}), 201
 
-    db.session.commit()
-    return jsonify({"message": f"Product '{product_to_update.name}' updated successfully"}), 200
+@app.route('/api/user/addresses/<int:address_id>', methods=['PUT', 'DELETE'])
+@api_login_required
+def handle_specific_address(address_id):
+    address = Address.query.filter_by(id=address_id, user_id=session['user_id']).first_or_404()
 
-@app.route('/api/products/<int:product_id>', methods=['DELETE'])
-@api_admin_required
-def delete_api_product(product_id):
-    product_to_delete = Product.query.get_or_404(product_id)
-    for image in product_to_delete.images:
-        try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], image.filename))
-        except OSError as e:
-            print(f"Error deleting image file: {e}")
-    db.session.delete(product_to_delete)
-    db.session.commit()
-    return jsonify({"message": f"Product '{product_to_delete.name}' deleted successfully"}), 200
+    if request.method == 'PUT':
+        data = request.get_json()
+        for key, value in data.items():
+            if hasattr(address, key):
+                setattr(address, key, value)
+        db.session.commit()
+        return jsonify({"message": "Address updated successfully", "address": address_to_dict(address)})
 
-# --- API: Admin Order Management ---
+    if request.method == 'DELETE':
+        if Order.query.filter_by(address_id=address_id).first():
+            return jsonify({"message": "Cannot delete address linked to past orders."}), 403
+        
+        db.session.delete(address)
+        db.session.commit()
+        return jsonify({"message": "Address deleted successfully"})
+
+# --- Admin Order Management ---
 @app.route('/api/admin/orders', methods=['GET'])
 @api_admin_required
 def get_all_orders():
     orders = Order.query.order_by(Order.date.desc()).all()
-    orders_list = []
-    for order in orders:
-        user = User.query.get(order.user_id)
-        order_data = {
+    orders_list = [
+        {
             'id': order.id,
             'date': order.date.strftime('%Y-%m-%d %H:%M'),
             'total': order.total,
-            'customer_name': user.username if user else 'Unknown',
-            'shipping_info': {
-                'full_name': order.address.full_name,
-                'address': order.address.street_address,
-                'apartment_suite': order.address.apartment_suite,
-                'city': order.address.city,
-                'country': order.address.country,
-                'postal_code': order.address.postal_code,
-                'phoneNumber': order.address.phone_number
-            },
-            'products': [{'name': item.product.name, 'quantity': item.quantity, 'unit_price': item.unit_price} for item in order.products]
-        }
-        orders_list.append(order_data)
-    return jsonify(orders_list), 200
-
-@app.route('/api/admin/test', methods=['POST'])
-@api_admin_required
-def admin_test():
-    user_id = session.get('user_id')
-    user = User.query.get(user_id)
-    return jsonify({"message": f"Hello, admin {user.username}! Your test was successful."}), 200
+            'customer_name': order.user.username if order.user else 'Unknown',
+            'shipping_info': address_to_dict(order.address),
+            'products': [
+                {'name': item.product.name, 'quantity': item.quantity, 'unit_price': item.unit_price}
+                for item in order.products
+            ]
+        } for order in orders
+    ]
+    return jsonify(orders_list)
 
 # =================================================================
 # SERVER STARTUP
 # =================================================================
 if __name__ == '__main__':
-    with app.app_context():
-        # db.create_all() # Commented out to prefer using migrations
-        pass
     app.run(debug=True, port=5000)
