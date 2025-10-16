@@ -12,9 +12,7 @@ function Navbar() {
   return (
     <header className={styles.navbar}>
       <Link to="/" className={styles.titleLink}>
-        {/* CORRECCIÓN: Usar la ruta directamente */}
-        <img src="/favicon.png" alt="TecnoMicruel Logo" className={styles.logo} />
-        <h1>TecnoMicruel</h1>
+        <h1>My Online Store</h1>
       </Link>
       <nav className={styles.navLinks}>
         <Link to="/">Home</Link>
