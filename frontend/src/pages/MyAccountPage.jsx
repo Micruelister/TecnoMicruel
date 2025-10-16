@@ -6,6 +6,7 @@ import axiosInstance from '../api/axiosInstance.js';
 import { toast } from 'react-toastify';
 import styles from './MyAccountPage.module.css';
 import '../App.css';
+import AddressBook from '../components/AddressBook.jsx'; // Importar el nuevo componente
 
 function MyAccountPage() {
   const { user, updateUser } = useAuth();
@@ -17,7 +18,7 @@ function MyAccountPage() {
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  
+
   // useEffect para buscar el historial de pedidos cuando la página carga
   useEffect(() => {
     const fetchOrders = async () => {
@@ -65,6 +66,7 @@ function MyAccountPage() {
       toast.success(response.data.message);
       // Limpiamos los campos del formulario de contraseña
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setShowPasswordForm(false); // Ocultar el formulario después de éxito
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Failed to update password.";
       toast.error(errorMessage);
@@ -98,19 +100,18 @@ function MyAccountPage() {
 return (
     <main className="container">
       <h2 style={{textAlign: 'center', fontSize: '2.5rem', marginBottom: '2rem'}}>My Account</h2>
+      
+      {/* Sección de Información de la Cuenta */}
       <div className={styles.accountSection}>
         <div className={styles.infoHeader}>
           <h3>Account Information</h3>
-          
           {!isEditing && (
             <button onClick={() => setIsEditing(true)} className={styles.editButton}>
               Edit Profile
             </button>
           )}
         </div>
-        
         {isEditing ? (
-          // SI estamos editando, muestra el formulario CON los botones de guardar/cancelar
           <form onSubmit={handleProfileSave} className={styles.editForm}>
             <div className={styles.formGroup}>
               <label htmlFor="username">Username</label>
@@ -132,7 +133,6 @@ return (
             </div>
           </form>
         ) : (
-          // SI NO estamos editando, muestra la información estática
           <div className={styles.viewInfo}>
             <strong>Username:</strong> <span>{user.username}</span>
             <strong>Email:</strong> <span>{user.email}</span>
@@ -141,6 +141,10 @@ return (
         )}
       </div>
 
+      {/* Añadir el componente AddressBook aquí */}
+      <AddressBook />
+
+      {/* Sección de Cambio de Contraseña */}
       <div className={styles.accountSection}>
         <div className={styles.infoHeader}>
           <h3>Change Password</h3>
@@ -153,13 +157,9 @@ return (
             </button>
           )}
         </div>
-
-        {/* 
-          This form is only rendered if 'showPasswordForm' is true.
-        */}
         {showPasswordForm && (
           <form onSubmit={handlePasswordSave}>
-            <div className={styles.formGroup}>
+             <div className={styles.formGroup}>
               <label htmlFor="currentPassword">Current Password</label>
               <input 
                 type="password" 
@@ -193,10 +193,6 @@ return (
               />
             </div>
             <div className={styles.buttonGroup}>
-              {/* 
-                This "Cancel" button simply hides the form again by setting
-                'showPasswordForm' back to false.
-              */}
               <button 
                 type="button" 
                 onClick={() => setShowPasswordForm(false)} 
@@ -215,6 +211,8 @@ return (
           </form>
         )}
       </div>
+
+      {/* Sección de Historial de Pedidos */}
       <div className={styles.orderHistory}>
         <h3>My Order History</h3>
         {loading ? (
