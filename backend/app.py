@@ -40,18 +40,13 @@ app.config.update(
 )
 stripe.api_key = os.getenv('STRIPE_API_KEY')
 
-# --- CORS Configuration ---
-# Build the list of allowed origins for CORS
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
-# Add the production frontend URL to the list of allowed origins
-origins = [FRONTEND_URL, "https://tecnomicruelgit-14777933-c1adb.web.app"]
-if GITPOD_WORKSPACE_URL := os.getenv('GITPOD_WORKSPACE_URL'):
-    origins.append(re.sub(r'https://5000-', 'https://5173-', GITPOD_WORKSPACE_URL))
-if CLOUD_WORKSTATIONS_URL := os.getenv('WEB_HOST'):
-    origins.append(re.sub(r':\d+', ':5173', CLOUD_WORKSTATIONS_URL))
+# --- CORS Configuration (Temporary Debugging) ---
+# Allow all origins to diagnose the deployment issue.
+origins = "*"
 
 # --- Extensions Initialization ---
 Session(app)
+# Initialize CORS with the wildcard origin for debugging.
 CORS(app, origins=origins, supports_credentials=True)
 bcrypt = Bcrypt(app)
 db.init_app(app)
