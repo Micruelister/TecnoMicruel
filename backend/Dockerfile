@@ -7,11 +7,6 @@ WORKDIR /app
 # Copia el archivo de dependencias al directorio de trabajo
 COPY requirements.txt .
 
-# --- PASO DE DEPURACIÓN PARA INVALIDAR CACHÉ ---
-# Imprime el contenido de requirements.txt en los logs de construcción para verificación.
-# Esta línea fuerza que la caché de esta capa se invalide.
-RUN echo "--- Verificando requirements.txt en el build: ---" && cat requirements.txt && echo "---------------------------------------------"
-
 # Instala las dependencias
 # La opción --no-cache-dir reduce el tamaño de la imagen
 RUN pip install --no-cache-dir -r requirements.txt
@@ -25,4 +20,4 @@ EXPOSE $PORT
 
 # Comando para ejecutar la aplicación cuando se inicie el contenedor
 # Usa Gunicorn, un servidor WSGI de grado de producción.
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --log-level debug app:app
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 app:app

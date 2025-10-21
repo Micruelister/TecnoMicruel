@@ -15,7 +15,6 @@ from werkzeug.utils import secure_filename
 import stripe
 from flask_session import Session
 from flask_migrate import Migrate
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 # --- Import db object and models ---
 from models import db, Product, ProductImage, User, Order, Address, OrderProduct
@@ -26,7 +25,6 @@ load_dotenv()
 
 # --- Configuration ---
 # Standard Flask and extension configs
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.config.update(
     SECRET_KEY=os.getenv('SECRET_KEY'),
     SESSION_TYPE='filesystem',
@@ -55,21 +53,6 @@ CORS(app, origins=origins, supports_credentials=True)
 bcrypt = Bcrypt(app)
 db.init_app(app)
 migrate = Migrate(app, db)
-
-# =================================================================
-# REQUEST LOGGING FOR DEBUGGING
-# =================================================================
-@app.before_request
-def log_all_request_info():
-    """A decorator to automatically log details of every incoming request."""
-    # Using print() is reliable for capturing logs in Google Cloud Run.
-    print(f"--- NEW REQUEST INCOMING ---")
-    print(f"PATH: {request.path}")
-    print(f"METHOD: {request.method}")
-    print("HEADERS:")
-    for header, value in request.headers.items():
-        print(f"  {header}: {value}")
-    print("--- END OF REQUEST DETAILS ---")
 
 # =================================================================
 # DIAGNOSTIC HEALTH CHECK
@@ -125,7 +108,7 @@ def address_to_dict(address: Address) -> dict:
 # =================================================================
 
 # --- Product & Brand API ---
-@app.route('/api/products', methods=['GET', 'POST'])
+@app.route('/api/products', methods=['GET', 'POST', 'OPTIONS'])
 def handle_products():
     """Handles GET for all products and POST for creating a new product."""
     if request.method == 'GET':
@@ -176,18 +159,22 @@ def handle_products():
         
         db.session.commit()
         return jsonify({"message": "Product created successfully!", "productId": new_product.id}), 201
+    
+    return jsonify({}), 200 # Handle OPTIONS
 
-@app.route('/api/brands', methods=['GET'])
+@app.route('/api/brands', methods=['GET', 'OPTIONS'])
 def get_brands():
     """Returns a unique list of all product brands."""
-    try:
-        brands = [brand[0] for brand in db.session.query(Product.brand).filter(Product.brand.isnot(None)).distinct().all()]
-        return jsonify(brands)
-    except Exception as e:
-        print(f"--- ERROR in /api/brands: {e} ---")
-        return jsonify({"error": "An error occurred fetching brands"}), 500
+    if request.method == 'GET':
+        try:
+            brands = [brand[0] for brand in db.session.query(Product.brand).filter(Product.brand.isnot(None)).distinct().all()]
+            return jsonify(brands)
+        except Exception as e:
+            print(f"--- ERROR in /api/brands: {e} ---")
+            return jsonify({"error": "An error occurred fetching brands"}), 500
+    return jsonify({}), 200 # Handle OPTIONS
 
-@app.route('/api/products/<int:product_id>', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/api/products/<int:product_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
 def handle_specific_product(product_id):
     """Handles GET, PUT, and DELETE for a single product."""
     product = Product.query.get_or_404(product_id)
@@ -232,9 +219,14 @@ def handle_specific_product(product_id):
         db.session.commit()
         return jsonify({"message": f"Product '{product.name}' deleted successfully"}), 200
 
+    return jsonify({}), 200 # Handle OPTIONS
+
 # --- Auth API ---
-@app.route('/api/register', methods=['POST'])
+@app.route('/api/register', methods=['POST', 'OPTIONS'])
 def api_register():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200 # Preflight
+    
     data = request.get_json()
     if not all(data.get(k) for k in ['username', 'email', 'password']):
         return jsonify({"message": "Username, email, and password are required"}), 400
@@ -251,8 +243,11 @@ def api_register():
     db.session.commit()
     return jsonify({"message": "User created successfully!"}), 201
 
-@app.route('/api/login', methods=['POST'])
+@app.route('/api/login', methods=['POST', 'OPTIONS'])
 def api_login():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200 # Preflight
+    
     data = request.get_json()
     if not all(data.get(k) for k in ['email', 'password']): # 'email' field used for both username/email
         return jsonify({"message": "Email/Username and password are required"}), 400
@@ -268,15 +263,21 @@ def api_login():
     
     return jsonify({"message": "Invalid credentials"}), 401
 
-@app.route('/api/logout', methods=['POST'])
+@app.route('/api/logout', methods=['POST', 'OPTIONS'])
 def api_logout():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
     session.clear()
     return jsonify({"message": "Logout successful"}), 200
 
 # --- Checkout & Order API ---
-@app.route('/api/create-checkout-session', methods=['POST'])
+@app.route('/api/create-checkout-session', methods=['POST', 'OPTIONS'])
 @api_login_required
 def create_checkout_session():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
     data = request.get_json()
     if not (cart_items := data.get('cartItems')) or not (shipping_address := data.get('shippingAddress')):
         return jsonify({"message": "Cart items and shipping address are required"}), 400
@@ -304,9 +305,12 @@ def create_checkout_session():
     except Exception as e:
         return jsonify(error=str(e)), 500
 
-@app.route('/api/order/verify', methods=['POST'])
+@app.route('/api/order/verify', methods=['POST', 'OPTIONS'])
 @api_login_required
 def verify_order():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+        
     data = request.get_json()
     user_id = session.get('user_id')
     if not (session_id := data.get('sessionId')) or not (shipping_address_data := session.get('shipping_address')):
@@ -357,9 +361,12 @@ def verify_order():
         return jsonify(error=str(e)), 500
 
 # --- User Account & Address Book API ---
-@app.route('/api/my-orders', methods=['GET'])
+@app.route('/api/my-orders', methods=['GET', 'OPTIONS'])
 @api_login_required
 def get_my_orders():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
     orders = Order.query.filter_by(user_id=session['user_id']).order_by(Order.date.desc()).all()
     orders_list = [
         {
@@ -375,9 +382,12 @@ def get_my_orders():
     ]
     return jsonify(orders_list)
 
-@app.route('/api/user/profile', methods=['GET', 'PUT'])
+@app.route('/api/user/profile', methods=['GET', 'PUT', 'OPTIONS'])
 @api_login_required
 def handle_user_profile():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+        
     user = User.query.get_or_404(session['user_id'])
     
     if request.method == 'GET':
@@ -400,9 +410,12 @@ def handle_user_profile():
             "user": {"id": user.id, "username": user.username, "email": user.email, "is_admin": user.is_admin, "phoneNumber": user.phone_number}
         })
 
-@app.route('/api/user/change-password', methods=['POST'])
+@app.route('/api/user/change-password', methods=['POST', 'OPTIONS'])
 @api_login_required
 def change_password():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+        
     user = User.query.get_or_404(session['user_id'])
     data = request.get_json()
     
@@ -417,9 +430,12 @@ def change_password():
     db.session.commit()
     return jsonify({"message": "Password updated successfully!"}), 200
 
-@app.route('/api/user/addresses', methods=['GET', 'POST'])
+@app.route('/api/user/addresses', methods=['GET', 'POST', 'OPTIONS'])
 @api_login_required
 def handle_addresses():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+        
     user_id = session['user_id']
     if request.method == 'GET':
         addresses = Address.query.filter_by(user_id=user_id).order_by(Address.id.desc()).all()
@@ -435,9 +451,12 @@ def handle_addresses():
         db.session.commit()
         return jsonify({"message": "Address added successfully", "address": address_to_dict(new_address)}), 201
 
-@app.route('/api/user/addresses/<int:address_id>', methods=['PUT', 'DELETE'])
+@app.route('/api/user/addresses/<int:address_id>', methods=['PUT', 'DELETE', 'OPTIONS'])
 @api_login_required
 def handle_specific_address(address_id):
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+        
     address = Address.query.filter_by(id=address_id, user_id=session['user_id']).first_or_404()
 
     if request.method == 'PUT':
@@ -457,9 +476,12 @@ def handle_specific_address(address_id):
         return jsonify({"message": "Address deleted successfully"})
 
 # --- Admin Order Management ---
-@app.route('/api/admin/orders', methods=['GET'])
+@app.route('/api/admin/orders', methods=['GET', 'OPTIONS'])
 @api_admin_required
 def get_all_orders():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+        
     orders = Order.query.order_by(Order.date.desc()).all()
     orders_list = [
         {
