@@ -57,6 +57,14 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 # =================================================================
+# DIAGNOSTIC HEALTH CHECK
+# =================================================================
+@app.route('/api/health')
+def health_check():
+    """A simple health check endpoint to verify deployment."""
+    return jsonify({"status": "ok", "message": "Backend is running!"}), 200
+
+# =================================================================
 # DECORATORS
 # =================================================================
 def api_login_required(f):
