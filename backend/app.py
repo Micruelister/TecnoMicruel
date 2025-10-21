@@ -57,6 +57,21 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 # =================================================================
+# REQUEST LOGGING FOR DEBUGGING
+# =================================================================
+@app.before_request
+def log_all_request_info():
+    """A decorator to automatically log details of every incoming request."""
+    # Using print() is reliable for capturing logs in Google Cloud Run.
+    print(f"--- NEW REQUEST INCOMING ---")
+    print(f"PATH: {request.path}")
+    print(f"METHOD: {request.method}")
+    print("HEADERS:")
+    for header, value in request.headers.items():
+        print(f"  {header}: {value}")
+    print("--- END OF REQUEST DETAILS ---")
+
+# =================================================================
 # DIAGNOSTIC HEALTH CHECK
 # =================================================================
 @app.route('/api/health')
