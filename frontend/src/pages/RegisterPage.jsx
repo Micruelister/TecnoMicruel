@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify'; // Import toast
 import styles from './AuthForm.module.css';
+import axiosInstance from '../api/axiosInstance'; // Correctly import axiosInstance
 
 function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -20,25 +21,24 @@ function RegisterPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
+      // Use axiosInstance to make the request to the correct backend URL
+      const response = await axiosInstance.post('/api/register', {
+        username,
+        email,
+        password,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create account');
-      }
-
-      toast.success('Account created successfully! Please log in.');
+      // Use the success message from the server if available
+      toast.success(data.message || 'Account created successfully! Please log in.');
       navigate('/login');
 
     } catch (err) {
       console.error('Registration error:', err);
-      // Display error using toast instead of alert
-      toast.error(err.message);
+      // Display a more specific error message from the server if available
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create account';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
