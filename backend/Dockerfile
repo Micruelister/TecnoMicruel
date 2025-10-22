@@ -5,10 +5,10 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies
-# - netcat is used by the entrypoint script to wait for the database
+# - netcat-openbsd is used by the entrypoint script to wait for the database
 # - build-essential and libpq-dev are needed for psycopg2-binary with native extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    netcat \
+    netcat-openbsd \
     build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
