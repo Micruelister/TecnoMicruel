@@ -158,6 +158,44 @@ def api_logout():
     session.clear()
     return jsonify({"message": "Logout successful"}), 200
 
+# --- User Profile API ---
+@app.route('/api/my-orders', methods=['GET'])
+@api_login_required
+def get_my_orders():
+    user_id = session['user_id']
+    orders = Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()).all()
+    
+    orders_list = []
+    for order in orders:
+        products_list = []
+        for op in order.products:
+            product_info = {
+                'id': op.product.id,
+                'name': op.product.name,
+                'price': op.price_at_purchase,
+                'quantity': op.quantity
+            }
+            products_list.append(product_info)
+            
+        order_data = {
+            'id': order.id,
+            'orderDate': order.order_date.isoformat(),
+            'totalAmount': order.total_amount,
+            'status': order.status,
+            'products': products_list
+        }
+        orders_list.append(order_data)
+        
+    return jsonify(orders_list), 200
+
+@app.route('/api/user/addresses', methods=['GET'])
+@api_login_required
+def get_user_addresses():
+    user_id = session['user_id']
+    addresses = Address.query.filter_by(user_id=user_id).all()
+    addresses_list = [address_to_dict(addr) for addr in addresses]
+    return jsonify(addresses_list), 200
+
 # --- Product & Brand API ---
 @app.route('/api/products', methods=['GET', 'POST'])
 def handle_products():
