@@ -1,23 +1,38 @@
-# Usa una imagen oficial de Python como imagen base
+# Use an official Python image as a base image
 FROM python:3.11-slim
 
-# Establece el directorio de trabajo en /app
+# Set the working directory in the container
 WORKDIR /app
 
-# Copia el archivo de dependencias al directorio de trabajo
+# Install system dependencies
+# - netcat is used by the entrypoint script to wait for the database
+# - build-essential and libpq-dev are needed for psycopg2-binary with native extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    netcat \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the dependencies file to the working directory
 COPY requirements.txt .
 
-# Instala las dependencias
-# La opción --no-cache-dir reduce el tamaño de la imagen
+# Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia el resto del código de la aplicación al directorio de trabajo
+# Copy the rest of the application code to the working directory
 COPY . .
 
-# Expone el puerto en el que se ejecutará la aplicación (Gunicorn se vinculará a este puerto)
-# La variable PORT es proporcionada automáticamente por Cloud Run.
+# Make the entrypoint script executable
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Set the entrypoint
+ENTRYPOINT ["entrypoint.sh"]
+
+# Expose the port the app will run on (Gunicorn will bind to this)
+# The PORT variable is automatically provided by Cloud Run.
 EXPOSE $PORT
 
-# Comando para ejecutar la aplicación cuando se inicie el contenedor
-# Usa Gunicorn, un servidor WSGI de grado de producción.
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 app:app
+# The CMD now becomes default arguments to the ENTRYPOINT.
+# We can keep it here to specify the default command Gunicorn should run.
+CMD ["app:app"]
