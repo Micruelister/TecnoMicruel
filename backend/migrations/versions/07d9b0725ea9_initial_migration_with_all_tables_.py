@@ -1,8 +1,8 @@
-"""Link addresses to users
+"""Initial migration with all tables including sessions
 
-Revision ID: 8a4fcf1bafac
-Revises: 286a72522b69
-Create Date: 2025-10-15 08:25:20.237538
+Revision ID: 07d9b0725ea9
+Revises: 
+Create Date: 2025-10-22 13:54:55.328370
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '8a4fcf1bafac'
-down_revision = '286a72522b69'
+revision = '07d9b0725ea9'
+down_revision = None
 branch_labels = None
 depends_on = None
 
@@ -26,6 +26,14 @@ def upgrade():
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('brand', sa.String(length=100), nullable=True),
     sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('sessions',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('session_id', sa.String(length=255), nullable=True),
+    sa.Column('data', sa.LargeBinary(), nullable=True),
+    sa.Column('expiry', sa.DateTime(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('session_id')
     )
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -89,5 +97,6 @@ def downgrade():
     op.drop_table('product_images')
     op.drop_table('addresses')
     op.drop_table('users')
+    op.drop_table('sessions')
     op.drop_table('products')
     # ### end Alembic commands ###
