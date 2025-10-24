@@ -19,6 +19,9 @@ echo "Running database migrations..."
 export FLASK_APP=app.py
 flask db upgrade
 
+echo "Migrations applied successfully. Starting server..."
+
+
 echo "Starting Gunicorn server..."
 # Start the Gunicorn server, passing along any arguments
 exec gunicorn --bind :$PORT --workers 1 --threads 8 app:app
